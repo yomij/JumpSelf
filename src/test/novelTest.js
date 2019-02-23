@@ -65,6 +65,11 @@ function start() {
 	testBook()
 }
 
-start()
+// start()
 
+(
+	function () {
+		Book.model.findByNameAndAuthor('重生之都市仙尊', '洛书', (err, doc) => console.log(err, doc))
+	}
+)();
 // getBreakpoint()

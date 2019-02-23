@@ -61,43 +61,37 @@ module.exports = {
 						console.log(err)
 						reject(err)
 					} else {
-						console.log(res)
-						// let $ = cheerio.load(res.text, {
-						// 	decodeEntities: false //禁用转码
-						// })
-						// const $info = $('.book .info')
-						// let info = {
-						// 	mainImg: `${config.BASE_URL}${$info.find('.cover img').attr('src')}`,
-						// 	title: $info.find('h2').text()
-						// }
-						// let chapter = []
-						// const key = ['author', 'tags', 'status', 'totalWords', 'latestUpdate', 'latestChapter']
-						// $info.find('.small span').each((index, item) => {
-						// 	let val = ''
-						// 	if(item.children.length > 1) {
-						// 		val = item.children[1].children[0].data
-						// 	} else {
-						// 		val = item.children[0].data.split('：')[1]
-						// 	}
-						// 	info[key[index]] = val
-						// })
-						// info['description'] = $info.find('.intro')[0].children[1].data.trim()
-						// let $item = $('.listmain dl dt').eq(1).next('dd')
-						// let i = 0
-						// while($item) {
-						// 	if(!$item[0]) break
-						// 	const $dd = $($item[0].children[0])
-						// 	chapter.push({
-						// 		title: `第${++i}章 ${$dd.text().replace(/.+章/,'').trim()}`,
-						// 		num: i,
-						// 		url: $dd.attr('href')
-						// 	})
-						// 	$item = $item.next('dd')
-						// }
-						// reslove({
-						// 	info: info,
-						// 	chapter
-						// })
+						let $ = cheerio.load(res.text, {
+							decodeEntities: false //禁用转码
+						})
+						const $info = $('#info')
+						let info = {
+							mainImg: `${config.BASE_URL}${$info.find('.cover img').attr('src')}`,
+							title: $info.find('h1').text()
+						}
+						let chapter = []
+						const key = ['author', 'tags', 'status', 'totalWords', 'latestUpdate', 'latestChapter']
+
+
+
+						info['description'] = $info.find('.intro')[0].children[1].data.trim()
+						let $item = $('.listmain dl dt').eq(1).next('dd')
+						let i = 0
+						while($item) {
+							if(!$item[0]) break
+							const $dd = $($item[0].children[0])
+							chapter.push({
+								title: `第${++i}章 ${$dd.text().replace(/.+章/,'').trim()}`,
+								num: i,
+								url: $dd.attr('href')
+							})
+							$item = $item.next('dd')
+						}
+						console.log(info, chapter)
+						reslove({
+							info: info,
+							chapter
+						})
 					}
 				});
 		})
@@ -126,7 +120,6 @@ module.exports = {
 				})
 		})
 	},
-
 
 	getText(url) {
 		return new Promise((reslove, reject) => {

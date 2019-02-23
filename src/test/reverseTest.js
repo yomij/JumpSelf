@@ -1,4 +1,6 @@
 const reserve = require('../novel/reserve')
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0"
+
 const file = require('../utils/file')
 const DB = require('../utils/dbConnect')
 
