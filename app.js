@@ -17,6 +17,22 @@ app.use(koaBody({
 	}
 }));
 
+
+function getIPAdress(){
+	var interfaces = require('os').networkInterfaces();
+	for(var devName in interfaces){
+		var iface = interfaces[devName];
+		for(var i=0;i<iface.length;i++){
+			var alias = iface[i];
+			if(alias.family === 'IPv4' && alias.address !== '127.0.0.1' && !alias.internal){
+				return alias.address;
+			}
+		}
+	}
+}
+
+
+
 // logger
 app.use(async (ctx, next) => {
 	await next();
@@ -36,4 +52,4 @@ app.use(cors())
 app.use(main);
 app.use(Router.routes());
 // console.log(Router)
-app.listen(config.APP_PORT, () => console.log(`running http://localhost:${config.APP_PORT}`));
+app.listen(config.APP_PORT, () => console.log(`running http://${getIPAdress()}:${config.APP_PORT}`));
