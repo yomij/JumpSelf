@@ -11,7 +11,7 @@ book.get('/color', async (ctx, next) => {
 	const img = 'http://img.yomij.cn/1124176533d0e0e9e4o.jpg'
 	if (!bufferImg)
 		bufferImg = await superagent.get(img)
-	const items = await colorx.getPaletteFromURL (bufferImg.body)
+	const items = await colorx.getPaletteFromURL(bufferImg.body)
 	// thmclrx.octree('http://pic1.win4000.com/mobile/2018-12-10/5c0e13e2e923a.jpg', (res) => console.log(res));
 	let color = [0, 0, 0]
 	items.forEach((item, index) => {
