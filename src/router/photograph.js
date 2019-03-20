@@ -5,9 +5,10 @@ const superagent = require('superagent')
 let book = new Router({
 	prefix: '/api/book'
 });
-let bufferImg =  null
-book.get('/color', async (ctx, next) => {
 
+let bufferImg =  null
+
+book.get('/t0/color', async (ctx, next) => {
 	const img = 'http://img.yomij.cn/1124176533d0e0e9e4o.jpg'
 	if (!bufferImg)
 		bufferImg = await superagent.get(img)
