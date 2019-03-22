@@ -26,6 +26,7 @@ const jscode2session = function (code) {
 user.post('/WXlogin', async (ctx, next) => {
 
   const body = ctx.request.body
+  
   if (!body.code) {
     ctx.body = {
       status: 400,
@@ -34,8 +35,10 @@ user.post('/WXlogin', async (ctx, next) => {
   } else {
     const res = await jscode2session(body.code)
     console.log(res)
-    ctx.body = res.body
-    await next()
+    ctx.body = {
+      status: 400,
+      message: body.code
+    }
   }
 
 })
