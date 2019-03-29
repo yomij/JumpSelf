@@ -4,7 +4,7 @@ const folderConfig = require('./folderConfig')
 const WXConfig = require('./WXConfig')
 
 module.exports =  {
-	APP_PORT: 3000,
+	APP_PORT: 3100,
 	SECRET: 'YOMI',
 	novelWebConfig,
 	dbConfig,

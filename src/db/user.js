@@ -7,27 +7,42 @@ const userSchema = db.createSchema({
   phoneNum: String,
   nickname: String,
   avatarUrl: String,
-  createTime: {type: Date, default: new Date}
+  createTime: {type: Date, default: new Date},
+  email: String,
+  subscriptionList: [{
+    title: String,
+    id: String,
+    mainImg: String,
+    author: String,
+    tag: String
+  }]
 })
 
-const chapterModel = db.connect().model('chapter', chapterSchema);
+const UserModel = db.connect().model('user', userSchema);
 
-chapterSchema.index({bookId: 1})
+// chapterSchema.index({bookId: 1})
 
 
 module.exports = {
-  model: chapterModel,
-  insertChapters(chapters) {
+  model: UserModel,
+  insertUser(user) {
+    const u = new UserModel(user)
     return new Promise((resolve, reject) => {
-      chapterModel.insertMany(chapters, (err, docs) => {
-        if (err) {
-          reject(err)
-        }
-        resolve(docs)
+      u.save((err) => {
+        if (err) reject(err)
+        resolve()
       })
     })
   },
-  findLast (id, count) {
-    return chapterModel.find({ bookId: id }).sort({chapterNum : -1}).limit(count)
+  queryUserByOpenId (openId) {
+    return new Promise((resolve, reject) => {
+      UserModel.find({openId}, '_id nickname', (err, doc) => {
+        if (err) reject(err)
+        resolve(doc)
+      })
+    })
+  },
+  querySubscription () {
+  
   }
 }
