@@ -25,14 +25,10 @@ const UserModel = db.connect().model('user', userSchema);
 
 module.exports = {
   model: UserModel,
-  insertUser(user) {
+  async insertUser(user) {
     const u = new UserModel(user)
-    return new Promise((resolve, reject) => {
-      u.save((err) => {
-        if (err) reject(err)
-        resolve()
-      })
-    })
+    const info = await u.save()
+    return info
   },
   queryUserByOpenId (openId) {
     return new Promise((resolve, reject) => {

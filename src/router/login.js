@@ -22,11 +22,13 @@ const jscode2session = function (code) {
   })
 }
 
-
+verify('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuaWNrbmFtZSI6IuaKim_miZPmiJBP55qEWTBtaSIsIm9wZW5JZCI6Im9pV1hUNVBXYlhwM2N2MS1wZDBkYmJ4ODJxZXMiLCJwaG9uZSI6IiIsImlhdCI6MTU1Mzk0NjcwMywiZXhwIjoxNTU0MDMzMTAzfQ.2ll5GfF-SK7GHMa9Y7tWfthIEKn8ofvdYPjnIGnmBeg', config.SECRET)
 // 获取照片列表
 user.post('/WXlogin', async (ctx, next) => {
 
   const body = ctx.request.body
+
+  console.log(ctx.header)
  
   if (!body.code) {
     ctx.body = {
@@ -37,17 +39,32 @@ user.post('/WXlogin', async (ctx, next) => {
     const res = await jscode2session(body.code)
     const user = await userDao.queryUserByOpenId(res.openid)
     if (!user.length) {
-      await userDao.insertUser({
+      const userInfo = await userDao.insertUser({
         openId: res.openid,
         nickname: body.userInfo.nickName,
         avatarUrl: body.userInfo.avatarUrl,
       })
+      console.info( JSON.stringify(userInfo))
+      const token = jwt.sign({
+        nickname: userInfo.nickname,
+        openId: userInfo.openId,
+        phone: userInfo.phone || ''
+      }, config.SECRET, { expiresIn: '24h' });
+
+      ctx.body = {
+        status: 200,
+        message: 'success',
+        data: {
+          token
+        }
+      }
+    } else {
+      ctx.body = {
+        status: 400,
+        message: body.code
+      }
     }
-    console.log(user)
-    ctx.body = {
-      status: 400,
-      message: body.code
-    }
+
   }
 
 })
