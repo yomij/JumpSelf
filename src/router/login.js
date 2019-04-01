@@ -1,7 +1,6 @@
 const Router = require('koa-router');
 const request = require('request');
 const jwt = require('jsonwebtoken')
-const verify = require('util').promisify(jwt.verify) // 解密
 const userDao = require("../db/user")
 
 const config = require('../config')
@@ -22,17 +21,13 @@ const jscode2session = function (code) {
   })
 }
 
-verify('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuaWNrbmFtZSI6IuaKim_miZPmiJBP55qEWTBtaSIsIm9wZW5JZCI6Im9pV1hUNVBXYlhwM2N2MS1wZDBkYmJ4ODJxZXMiLCJwaG9uZSI6IiIsImlhdCI6MTU1Mzk0NjcwMywiZXhwIjoxNTU0MDMzMTAzfQ.2ll5GfF-SK7GHMa9Y7tWfthIEKn8ofvdYPjnIGnmBeg', config.SECRET)
-// 获取照片列表
+// 微信登陆
 user.post('/WXlogin', async (ctx, next) => {
-
   const body = ctx.request.body
-
-  console.log(ctx.header)
- 
   if (!body.code) {
     ctx.body = {
       status: 400,
+      data: null,
       message: 'code is not present'
     }
   } else {
@@ -46,11 +41,11 @@ user.post('/WXlogin', async (ctx, next) => {
       })
       console.info( JSON.stringify(userInfo))
       const token = jwt.sign({
+        id: userInfo._id,
         nickname: userInfo.nickname,
         openId: userInfo.openId,
         phone: userInfo.phone || ''
       }, config.SECRET, { expiresIn: '24h' });
-
       ctx.body = {
         status: 200,
         message: 'success',
@@ -59,48 +54,68 @@ user.post('/WXlogin', async (ctx, next) => {
         }
       }
     } else {
+      const userInfo = user[0]
+      const token = jwt.sign({
+        id: userInfo._id,
+        nickname: userInfo.nickname,
+        openId: userInfo.openId,
+        phone: userInfo.phone || ''
+      }, config.SECRET, { expiresIn: '24h' });
       ctx.body = {
-        status: 400,
-        message: body.code
+        status: 200,
+        message: 'success',
+        data: {
+          token
+        }
       }
     }
-
   }
-
 })
 
-
-
+// 账号登陆
 user.post('/login', async (ctx) => {
   const data = ctx.request.body;
-  if(!data.name || !data.password){
+  if(!data.username || !data.password){
     return ctx.body = {
-      code: '000002',
+      status: '400',
       data: null,
-      msg: '参数不合法'
+      message: 'params are not present'
     }
   }
-  const result = await userModel.findOne({
-    name: data.name,
-    password: data.password
-  })
-  if(result !== null){
+  const flag = data.flag
+  const userInfo = await userDao.queryUserByPhone(data.username)
+  if(userInfo !== null){
     const token = jwt.sign({
-      name: result.name,
-      _id: result._id
-    }, 'my_token', { expiresIn: '2h' });
+      id: userInfo._id,
+      nickname: userInfo.nickname,
+      openId: userInfo.openId,
+      phone: userInfo.username
+    }, config.SECRET, { expiresIn: '24h' });
     return ctx.body = {
-      code: '000001',
-      data: token,
-      msg: '登录成功'
+      status: 200,
+      data: {
+        token
+      },
+      message: 'success'
     }
   }else{
     return ctx.body = {
-      code: '000002',
+      status: -1,
       data: null,
-      msg: '用户名或密码错误'
+      message: '用户名或密码错误'
     }
   }
 });
+
+user.get('/', async (ctx) => {
+  const user = ctx.state.user
+  const userInfo = await userDao.queryUserById(user.id)
+  ctx.body = {
+    status: 200,
+    data: userInfo,
+    message: 'success'
+  }
+});
+
 
 module.exports = user;

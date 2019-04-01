@@ -4,7 +4,7 @@ const db = new DB('yomi', 27017)
 
 const userSchema = db.createSchema({
   openId: String,
-  phoneNum: String,
+  phone: String,
   nickname: String,
   avatarUrl: String,
   createTime: {type: Date, default: new Date},
@@ -32,13 +32,22 @@ module.exports = {
   },
   queryUserByOpenId (openId) {
     return new Promise((resolve, reject) => {
-      UserModel.find({openId}, '_id nickname', (err, doc) => {
+      UserModel.find({openId}, '_id nickname phone openId', (err, doc) => {
         if (err) reject(err)
         resolve(doc)
       })
     })
   },
-  querySubscription () {
-  
+  queryUserByPhone (phoneNum) {
+    return new Promise((resolve, reject) => {
+      UserModel.find({phoneNum}, '_id openId nickname', (err, doc) => {
+        if (err) reject(err)
+        resolve(doc)
+      })
+    })
+  },
+  async queryUserById (id) {
+    console.log(id)
+    return await UserModel.findById(id, {_id: 0, __v: 0})
   }
 }

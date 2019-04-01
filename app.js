@@ -5,8 +5,8 @@ const koaBody = require('koa-body');
 const cors = require('koa2-cors');
 const serve = require('koa-static');
 const jwtKoa = require('koa-jwt')
-
-const secret = 'Yomi'
+const jwt = require('jsonwebtoken')
+const verify = require('util').promisify(jwt.verify) // 解密
 
 const Router = require('./src/router');
 const config = require('./src/config');
@@ -42,9 +42,28 @@ let customizeFn = {
 
 console = Object.assign(console, customizeFn)
 
+// Custom 401 handling if you don't want to expose koa-jwt errors to users
+app.use(function(ctx, next){
+  return next().catch((err) => {
+    if (401 == err.status) {
+      ctx.status = 401;
+      ctx.body = {
+        status: 401,
+        data: null,
+        message: 'token失效请重新登陆'
+      };
+    } else {
+      throw err;
+    }
+  });
+});
 
 // token
-app.use(jwtKoa({secret}).unless({
+app.use(jwtKoa(
+  {
+    debug: true,
+    secret: config.SECRET
+  }).unless({
   path: [
     /^\/api\/.+\/t0\/*/,
     '/api/user/WXlogin'
@@ -52,10 +71,10 @@ app.use(jwtKoa({secret}).unless({
 }));
 
 
-
 // logger
 app.use(async (ctx, next) => {
   await next();
+  console.log(ctx.user)
   const body = ctx.request.body
   const query = ctx.query
   const rt = ctx.response.get('X-Response-Time')
