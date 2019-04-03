@@ -10,8 +10,12 @@ const Chapter = require('../db/chapter')
 const COUNT = 5
 const failedNum = []
 
+const res = require('./html')
+
+
 async function testBook () {
-	let book = await reserve.getBook()
+	let book = await reserve.init(res)
+	console.log(book)
 }
 
 

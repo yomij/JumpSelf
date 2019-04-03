@@ -3,41 +3,47 @@ const superagent = require('superagent')
 require('superagent-charset')(superagent)
 
 const cheerio = require('cheerio');
+const async = require('async');
+const eventproxy = require('eventproxy');
 
 const agent = require('./userAgent')
-const config = require('../config').novelWebConfig
+const config = {
+	BASE_URL: 'https://www.ixdzs.com/bsearch?q=a'
+}
 
 module.exports = {
 	// 获取排行榜列表
-	init() {
+	init(res) {
 		return new Promise((reslove, reject) => {
-			console.log(`${config.BASE_URL}${config.RANKING_URL}`)
-			superagent.get(`${config.BASE_URL}${config.RANKING_URL}`)
-				.charset('gbk')
-				.set('X-Forwarded-For', '10.111.128.90')
-				.end((err, res) => {
-					if (err) {
-						reject(err)
+			// console.log(`${config.BASE_URL}`)
+			// superagent.get(`${config.BASE_URL}`)
+			// 	.charset('utf-8')
+			// 	.set('X-Forwarded-For', '10.111.128.90')
+			// 	.end((err, res) => {
+			// 		if (err) {
+			// 			reject(err)
+			// 		} else {
+			// 			let $ = cheerio.load(res.text);
+			// 			console.log($('.box_k ul li').each(item => console.log(item)))
+			// 		}
+			// 	});
+			let books = []
+			let $ = cheerio.load(res.text);
+			$('.box_k ul li').each((index, item) => {
+				books[index] = {}
+				item = $(item)
+				console.log(item.find('.b_name').text())
+				item.find('.b_info span').each((i, info) => {
+					const names = ['author', 'totalCount', 'status', 'latestUpdate']
+					if(i === 3) {
+						const time = $(info)
 					} else {
-						let $ = cheerio.load(res.text);
-						const rankList = []
-						$('.wrap.rank .block.bd').each((index, item) => {
-							const $box = $(item)
-							let rank = {
-								rankName: $box.find('h2').text(),
-								content: []
-							}
-							$box.find('ul li').each((index, item) => {
-								rank.content.push({
-									name: $(item).find('a').text(),
-									url: $(item).find('a').attr('href')
-								})
-							})
-							rankList.push(rank)
-						})
-						reslove(rankList)
+						books[index][names[i]] = $(info).text().split('：')[1]
 					}
-				});
+					
+				})
+			})
+			reslove(books)
 		})
 	},
 	/*
