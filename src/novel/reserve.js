@@ -111,7 +111,7 @@ module.exports = {
 	 * 	chapterList Array[String] 书籍章节信息列表
 	 * })
 	 **/
-	getBook(url = 'https://www.ixdzs.com/d/0/541/') {
+	getBook(url = 'https://www.ixdzs.com/d/64/64960/') {
 		console.log(url)
 		return new Promise((reslove, reject) => {
 			superagent.get(url)
@@ -178,7 +178,6 @@ module.exports = {
 			superagent.get(url)
 				.set({'User-Agent': agent[parseInt(Math.random() * agent.length)]})
 				.set('X-Forwarded-For', '10.111.123.90')
-				// .timeout({ response: 5000, deadline: 60000 })
 				.end((err, res) => {
 					console.log(`${config.BASE_URL}${url}`)
 					if (err) {
@@ -188,9 +187,9 @@ module.exports = {
 						let $ = cheerio.load(res.text, {
 							decodeEntities: false //禁用转码
 						});
-						let content = $('.content').html().replace(/<br>/g, '')
-						content = content.replace(/https\:[\s\S]*/g, '')
-						reslove(content + '\r')
+						let content = $('.content').html() && $('.content').html().replace(/\n/g, '')
+						// content = content.replace(/https\:[\s\S]*/g, '')
+						reslove(content)
 					}
 				})
 		})
