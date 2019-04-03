@@ -7,8 +7,9 @@ const chapterSchema = db.createSchema({
 	chapterNum: Number,
 	title: String,
 	content: String,
-	wordContent: Number,
-	createTime: {type: Date, default: new Date}
+	wordCount: Number,
+	createTime: {type: Date, default: new Date},
+	source: String // 来源地址
 })
 
 const chapterModel = db.connect().model('chapter', chapterSchema);
