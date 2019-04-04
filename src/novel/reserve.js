@@ -167,7 +167,7 @@ module.exports = {
 							}
 							chapters.push(chapter)
 						})
-						reslove(chapters)
+						reslove(chapters.splice(0, 200))
 					}
 				});
 		})
@@ -178,6 +178,7 @@ module.exports = {
 			superagent.get(url)
 				.set({'User-Agent': agent[parseInt(Math.random() * agent.length)]})
 				.set('X-Forwarded-For', '10.111.123.90')
+				.timeout(10000)
 				.end((err, res) => {
 					console.log(`${config.BASE_URL}${url}`)
 					if (err) {

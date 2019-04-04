@@ -9,20 +9,14 @@ const jwt = require('jsonwebtoken')
 const verify = require('util').promisify(jwt.verify) // 解密
 
 const Router = require('./src/router');
+const Router2b = require('./src/router2b');
 const config = require('./src/config');
+const Socket = require('./src/utils/socket')
 
-const main = serve(path.join(__dirname, 'public'));
+const main = serve(path.join(__dirname, 'src', 'public'));
 const app = new Koa();
+const server = require('http').createServer(app.callback());
 
-
-app.use(cors())
-app.use(main);
-app.use(koaBody({
-  multipart: true,
-  formidable: {
-    maxFileSize: 20 * 1024 * 1024 // 设置上传文件大小最大限制
-  }
-}));
 
 // 封装console
 let customizeFn = {
@@ -66,7 +60,9 @@ app.use(jwtKoa(
   }).unless({
   path: [
     /^\/api\/.+\/t0\/*/,
-    '/api/user/WXlogin'
+    '/api/user/WXlogin',
+    /.+\.[html|ico|jpg)]/,
+    /^\/api2b\/*/
   ] //数组中的路径不需要通过jwt验证
 }));
 
@@ -89,11 +85,21 @@ app.use(async (ctx, next) => {
   ctx.set('X-Response-Time', `${ms}ms`);
 });
 
-
+app.use(cors())
+app.use(main);
+app.use(koaBody({
+  multipart: true,
+  formidable: {
+    maxFileSize: 20 * 1024 * 1024 // 设置上传文件大小最大限制
+  }
+}));
 app.use(Router.routes());
+app.use(Router2b.routes())
+
+global.socket = new Socket(server, ['book'])
 
 // console.log(Router)
-app.listen(config.APP_PORT, () => console.log(`running http://${(function () {
+server.listen(config.APP_PORT, () => console.log(`running http://${(function () {
   let interfaces = require('os').networkInterfaces();
   for (let devName in interfaces) {
     let iface = interfaces[devName];

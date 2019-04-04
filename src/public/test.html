@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device,initial-scale=1">
+	<title>Document</title>
+</head>
+<body>
+<div id="img">
+
+</div>
+<input name="file" id="file" type="file" accept="image/png,image/gif,image/jpeg" multiple="multiple"/>
+<input name="tag" id="tag" type="text">
+<button id="confirm">确定</button>
+</body>
+<script src="http://libs.baidu.com/jquery/2.1.1/jquery.min.js"></script>
+<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+<script>
+	document.getElementById('file').onchange = function(){
+		// alert('aa')
+	}
+	
+	document.getElementById('confirm').onclick = function () {
+		var windowURL = window.URL
+		var dataUrl;
+		let files = document.getElementById('file').files
+		console.log(document.getElementById('file').files)
+		
+		
+		let param = new FormData()  // 创建form对象
+		Array.from(files).forEach(item => { // 通过append向form对象添加数据
+			param.append('file', item, item.name)
+			
+			
+			var img = document.createElement("img");
+			
+			dataUrl = windowURL.createObjectURL(item)
+			img.setAttribute('src', dataUrl)
+			img.style.width="400px";
+			document.getElementById('img').appendChild(img)
+		})
+		
+		param.append('name',JSON.stringify( {
+			mianName: '照片啊',
+			1: '啦啦啦'
+		}))
+		param.append('author', 'yomi')
+		param.append('takeTime', new Date())
+		param.append('tag', $('#tag').val())
+		console.log(param.get('tag')) // FormData私有类对象，访问不到，可以通过get判断值是否传进去
+		let config = {
+			headers: {'Content-Type': 'multipart/form-data'}
+		}
+		// 添加请求头
+		axios.post('/api/ym/photograph/upload', param, config)
+			.then(response => {
+				if (response.data.code === 0) {
+					console.log(response.data.data);
+				}
+				console.log(response.data)
+			})
+	}
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js"></script>
+<script>
+	var socket = io({
+		path: '/test'
+	});
+	console.log(socket)
+	socket.on('book', function (data) {
+		console.log(data)
+		document.write(JSON.stringify(data))
+		socket.emit('my other event', { my: 'data' });
+	});
+</script>
+</html>

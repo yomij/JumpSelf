@@ -1,3 +1,9 @@
+const Router = require('koa-router');
+
+let book = new Router({
+	prefix: '/api2b/book'
+});
+
 const reserve = require('../novel/reserve')
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0"
 
@@ -7,8 +13,8 @@ const eventproxy = require('eventproxy');
 const ep = new eventproxy()
 
 const spiderConfig = {
-	CONCURRENCY_COUNT: 5,
-	MAX_SINGLE_COUNT: 10
+	CONCURRENCY_COUNT: 10,
+	MAX_SINGLE_COUNT: 100
 }
 
 async function testBook() {
@@ -29,19 +35,22 @@ async function testBook() {
 	})
 }
 
+
 function dos(list, index, subCallback) {
+	global.socket.book(`第${index + 1} 轮抓取开始。。。<br/>`)
 	async.mapLimit(list, spiderConfig.CONCURRENCY_COUNT, function (cs, callback) {
 		reserve.getChapter(cs.source).then(res => {
 			console.log(cs.source)
 			cs.content = res
 			cs.success = true
+			global.socket.book(`章节编号:${cs.chapterNum} ${cs.title} 抓取成功<br/>`)
 			callback(null, cs)
 		}).catch(e => {
 			cs.success = false
 			cs.content = e.message
 			callback(null, cs)
+			global.socket.book(`章节编号:${cs.chapterNum} ${cs.title} 抓取失败，失败理由：${e.message}<br/>`)
 		})
-		
 	}, function (err, result) {
 		let failed = []
 		const success = result.filter(item => {
@@ -64,15 +73,10 @@ function dos(list, index, subCallback) {
 				success: false
 			})
 		}
+		global.socket.book(`第${index + 1} 轮抓取结束<br/>`)
 	});
 }
 
-
-ep.after('chapter', result => {
-
-})
-
-testBook()
 
 // async.parallel([
 // 		function(callback) {
@@ -94,3 +98,12 @@ testBook()
 // 	});
 
 // getBreakpoint()
+
+
+book.get('/add', async (ctx, next) => {
+	testBook()
+	ctx.body = '抓取开始'
+})
+
+
+module.exports = book;
