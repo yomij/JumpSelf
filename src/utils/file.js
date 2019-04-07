@@ -31,21 +31,19 @@ module.exports = {
 			}
 		})
 	},
-	writeLog(log = '') {
-		fs.appendFile(getFileName(), `\n\r[${fmtTime('yyyy-MM-dd hh:mm:ss')}] ${log} \n\r`, (err) => {
-			if (err) throw err;
-			console.log('Log Write Success');
-		});
-	},
-	writeArticle(title = 'article', content = '') {
-		let writeStream = fs.createWriteStream(`${config.ATL_PATH}/[${fmtTime('yyyy-MM-dd')}] ${title}.txt`);
+	writeJson(proxyArr, name) {
+		let writeStream = fs.createWriteStream(`${__dirname}/${name}.json`);
 		writeStream.on('finish', function(){
 			console.log('Article Write Success');
 		});
 		writeStream.on('error', function(err){
 			console.log('write error - %s', err.message);
 		});
-		writeStream.write(title + '\n\r' + content + '\n\r', 'utf8');
+		writeStream.write(JSON.stringify(proxyArr));
 		writeStream.end();
+	},
+	readJson(fileName) {
+		const data = fs.readFileSync(`${__dirname}/${fileName}.json`,'utf-8');
+		return JSON.parse(data)
 	}
 }

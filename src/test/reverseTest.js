@@ -1,46 +1,87 @@
 const reserve = require('../novel/reserve')
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0"
-
+const bookDao = require('../db/book')
+const chapterDao = require('../db/chapter')
+const proxyText = require('./proxyTest')
+const color = require('../utils/getMainColor')
 
 const async = require('async');
-const eventproxy = require('eventproxy');
-const ep = new eventproxy()
-
 const spiderConfig = {
 	CONCURRENCY_COUNT: 5,
 	MAX_SINGLE_COUNT: 10
 }
 
-async function testBook() {
-	// let book = await reserve.init(res)
-	const book = await reserve.getBook()
-	const cs = await reserve.getChapters(book.chapterUrl)
-	const length = cs.length
-	const count = Math.floor(length / spiderConfig.MAX_SINGLE_COUNT)
-	const list = []
+async function spider(book, clist) {
+	// const proxys = await proxyText.getProxyList()
+	let bookInfo
+	if (typeof book === 'string') {
+
+	// 	async.someLimit(proxys, 10, async function (p) {
+	// 		console.log(p)
+	// 		const res = await reserve.getBook(book, p)
+	// 		if (!res.message) {
+	// 			console.log(res)
+	// 			return res
+	// 		} else {
+	// 			console.log(res.message)
+	// 		}
+	//
+	// 	}, function (result) {
+	// 		// console.log(result, result.message)
+	// 	});
+	// }
+	// console.log('aaaaaaa')
+
+		try {
+			console.log(book)
+			bookInfo = await reserve.getBook(book)
+			console.log(bookInfo)
+		} catch (e) {
+			console.log('failed', e.message)
+			// return spider(book)
+			return
+		}
+		bookInfo.mainImg = await color(bookInfo.mainImg.url)
+		console.log(bookInfo)
+		book = await bookDao.server.insert(bookInfo)
+		book.chapterUrl = bookInfo.chapterUrl
+	}
+	const cs = clist ? clist : await reserve.getChapters(book.chapterUrl)
+	let list = []
 	while (cs.length) {
 		list.push(cs.splice(0, spiderConfig.MAX_SINGLE_COUNT))
 	}
 	let index = 0
 	async.mapLimit(list, 1, function (subList, callback) {
-		dos(subList, index++, callback)
+		dos(subList, index++, book._id, callback)
 	}, function (err, result) {
-		console.log(err, result)
+		const failed = []
+		result.forEach(item => {
+			failed.push(...item.data.failed)
+		})
+		console.log(err,failed.length, JSON.stringify(failed))
 	})
 }
 
-function dos(list, index, subCallback) {
+function dos(list, index, bookId, subCallback) {
 	async.mapLimit(list, spiderConfig.CONCURRENCY_COUNT, function (cs, callback) {
-		reserve.getChapter(cs.source).then(res => {
-			console.log(cs.source)
-			cs.content = res
-			cs.success = true
-			callback(null, cs)
-		}).catch(e => {
-			cs.success = false
-			cs.content = e.message
-			callback(null, cs)
+		cs = Object.assign(cs, {
+			bookId,
+			_id: bookId + cs.chapterNum
 		})
+
+		setTimeout(() => {
+			reserve.getChapter(cs.source).then(res => {
+				console.log(cs.source)
+				cs.content = res
+				cs.success = true
+				callback(null, cs)
+			}).catch(e => {
+				cs.success = false
+				cs.content = ''
+				callback(null, cs)
+			})
+		}, 1000 * Math.random())
 		
 	}, function (err, result) {
 		let failed = []
@@ -48,6 +89,8 @@ function dos(list, index, subCallback) {
 			if (!item.success) failed.push(item)
 			return item.success
 		})
+		// 写入数据库
+		chapterDao.insertChapters(result)
 		if (!err) {
 			subCallback(null, {
 				index,
@@ -57,40 +100,18 @@ function dos(list, index, subCallback) {
 					success
 				}
 			})
-			// 写入数据库
 		} else {
 			subCallback(null, {
 				index,
-				success: false
+				success: false,
+				data: {
+					failed: list,
+					success: []
+				}
 			})
 		}
 	});
 }
 
+spider('/d/215/215012/')
 
-ep.after('chapter', result => {
-
-})
-
-testBook()
-
-// async.parallel([
-// 		function(callback) {
-// 			setTimeout(function() {
-// 				callback(null, 'one');
-// 			}, 200);
-// 		},
-// 		function(callback) {
-// 			setTimeout(function() {
-// 				callback(null, 'two');
-// 			}, 100);
-// 		}
-// 	],
-// // optional callback
-// 	function(err, results) {
-// 		// the results array will equal ['one','two'] even though
-// 		// the second function had a shorter timeout.
-// 		console.log(results)
-// 	});
-
-// getBreakpoint()

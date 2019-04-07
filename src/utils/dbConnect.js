@@ -35,6 +35,10 @@ class DB {
 		return new this.mongoose.Schema(schema, options);
 	}
 
+	getMongoose() {
+		return this.mongoose
+	}
+
 }
 
 DB.connected = {};

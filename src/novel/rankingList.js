@@ -4,7 +4,7 @@ require('superagent-charset')(superagent)
 
 const cheerio = require('cheerio');
 
-const agent = require('./userAgent')
+const agent = require('../utils/userAgent')
 const config = require('../config').novelWebConfig
 
 module.exports = {

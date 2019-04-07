@@ -1,13 +1,13 @@
 const superagent = require('superagent')
 require('superagent-charset')(superagent)
-const cheerio = require('cheerio');
-const agent = require('./userAgent')
+require('superagent-proxy')(superagent)
 
-const config = {
-	SEARCH_URL: 'https://www.ixdzs.com/bsearch?q=a',
-	BASE_URL: 'https://www.ixdzs.com',
-	CHAPTER_URL: 'https://read.ixdzs.com'
-}
+const cheerio = require('cheerio');
+const agent = require('../utils/userAgent')
+
+const config = require('../config').novelWebConfig
+
+const userAgents = require('../utils/userAgent')
 
 const format = {
 	'作者': {
@@ -42,7 +42,12 @@ const format = {
 	},
 	'最新章节': {
 		key: 'latestUpdate',
-		format: null
+		format(text) {
+			if (/^\d+小时/g.test(text)) {
+				const hours = text.match(/^\d+/g)[0]
+				return new Date().getTime() - hours * 60 * 60 * 1000
+			}
+		}
 	},
 	'最新': {
 		key: 'latestUpdateName',
@@ -50,18 +55,39 @@ const format = {
 	},
 	'时间': {
 		key: 'latestUpdate',
-		format: null
+		format(text) {
+			if (/^\d+小时/g.test(text)) {
+				const hours = text.match(/^\d+/g)[0]
+				return new Date().getTime() - hours * 60 * 60 * 1000
+			}
+		}
 	},
 	'分类': {
 		key: 'mainTag'
 	}
 }
 
+
+
+
+
+async function getProxy() {
+	const res = await superagent
+		.get('http://piping.mogumiao.com/proxy/api/get_ip_bs?appKey=fe2b66789efc4695aff3ac5104672a30&count=1&expiryDate=0&format=1&newLine=2')
+	const data = JSON.parse(res.text)
+	console.log(res.text)
+	if (data.code === 0) {
+		console.log('http://' + +data.msg[0].ip + ':'+  data.msg[0].port)
+	}
+}
+// getProxy()
+
+
 module.exports = {
 	// 获取排行榜列表
-	init(res) {
-		return new Promise((reslove, reject) => {
-			console.log(`${config.SEARCH_URL}`)
+	search(text) {
+		return new Promise((resolve, reject) => {
+			console.log(`${config.SEARCH_URL}${text}`)
 			superagent.get(`${config.SEARCH_URL}`)
 				.charset('utf-8')
 				.set('X-Forwarded-For', '10.111.128.90')
@@ -94,7 +120,7 @@ module.exports = {
 							})
 							books[index] = book
 						})
-						reslove(books)
+						resolve(books)
 					}
 				});
 		})
@@ -111,13 +137,21 @@ module.exports = {
 	 * 	chapterList Array[String] 书籍章节信息列表
 	 * })
 	 **/
-	getBook(url = 'https://www.ixdzs.com/d/64/64960/') {
-		console.log(url)
-		return new Promise((reslove, reject) => {
-			superagent.get(url)
+	async getBook(url, useIp) {
+		// console.log('getBook', url, 'http://' + useIp)
+		return new Promise((resolve, reject) => {
+			superagent.get(config.BASE_URL + url)
+				.set('X-Forwarded-For', '10.131.128.90')
+				.set('header', {
+					'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+					'Accept-Encoding': 'gzip, deflate',
+					'Accept-Language': 'zh-CN,zh;q=0.8,en;q=0.6,zh-TW;q=0.4',
+					'User-Agent': userAgents[~~(userAgents.length * Math.random())],
+				})
+				// .proxy('http://' + useIp)
+				.timeout(config.TIMEOUT * 3)
 				.end((err, res) => {
 					if (err) {
-						console.log(err)
 						reject(err)
 					} else {
 						let $ = cheerio.load(res.text, {
@@ -138,16 +172,51 @@ module.exports = {
 								book['chapterUrl'] = $(item).find('a').eq(1).attr('href')
 							}
 						})
-						reslove(book)
+						book = Object.assign(book,{
+							title: infoBox.find('h1').text().split('txt')[0],
+							mainImg: {
+								url: $('.d_af img').attr('src')
+							},
+							description: $('.d_co').text().replace(/\s*|\t|\r|\n|/g, ''),
+							extra: {
+								urls: {
+									mainUrl: config.BASE_URL + url
+								}
+							}
+						})
+						resolve(book)
+					}
+				});
+		})
+	},
+
+	testProxy(url , ip) {
+		return new Promise((resolve, reject) => {
+			superagent.get(config.BASE_URL + url)
+				.proxy(`http://${ip}`)
+				.timeout(config.TIMEOUT * 3)
+				.end((err, res) => {
+					if (err) {
+						reject(err)
+					} else if (res.text){
+						resolve(ip)
+					} else {
+						reject()
 					}
 				});
 		})
 	},
 	
-	getChapters(url = 'https://read.ixdzs.com/213/213028/') {
+	getChapters(url) {
 		console.log(url)
-		return new Promise((reslove, reject) => {
+		return new Promise((resolve, reject) => {
 			superagent.get(url)
+				.set('header', {
+					'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+					'Accept-Encoding': 'gzip, deflate',
+					'Accept-Language': 'zh-CN,zh;q=0.8,en;q=0.6,zh-TW;q=0.4',
+					'User-Agent': userAgents[~~(userAgents.length * Math.random())],
+				})
 				.end((err, res) => {
 					if (err) {
 						console.log(err)
@@ -167,18 +236,19 @@ module.exports = {
 							}
 							chapters.push(chapter)
 						})
-						reslove(chapters.splice(0, 200))
+						resolve(chapters)
 					}
 				});
 		})
 	},
 	
-	getChapter(url = 'https://read.ixdzs.com/213/213028/p54.html') {
+	getChapter(url) {
 		return new Promise((reslove, reject) => {
 			superagent.get(url)
-				.set({'User-Agent': agent[parseInt(Math.random() * agent.length)]})
+				.set({'User-Agent': userAgents[parseInt(Math.random() * agent.length)]})
 				.set('X-Forwarded-For', '10.111.123.90')
-				.timeout(10000)
+				// .proxy(proxy)
+				.timeout(config.TIMEOUT)
 				.end((err, res) => {
 					console.log(`${config.BASE_URL}${url}`)
 					if (err) {

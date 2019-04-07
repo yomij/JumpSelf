@@ -3,6 +3,7 @@ const DB = require('../utils/dbConnect')
 const db = new DB('yomi', 27017)
 
 const chapterSchema = db.createSchema({
+	_id: String,
 	bookId: { type: db.mongoose.Schema.Types.ObjectId, ref: 'Book' },
 	chapterNum: Number,
 	title: String,
@@ -29,7 +30,21 @@ module.exports = {
 			})
 		})
 	},
+  async findChaptersByBookId(id, pageNo, size) {
+    const totalCount = await chapterModel.countDocuments({ bookId: id })
+    const chapterList = await chapterModel.find({ bookId: id }, 'createTime _id title').sort({chapterNum : 0}).skip((pageNo - 1) * size).limit(size)
+    return {
+      totalCount,
+      chapterList
+    }
+  },
+  findChapterById (id) {
+    return chapterModel.findById(id)
+  },
 	findLast (id, count) {
 		return chapterModel.find({ bookId: id }).sort({chapterNum : -1}).limit(count)
+	},
+	findFirst (id) {
+		return chapterModel.findOne({ bookId: id, chapterNum: 0 })
 	}
 }

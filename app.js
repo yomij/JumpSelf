@@ -59,6 +59,7 @@ app.use(jwtKoa(
     secret: config.SECRET
   }).unless({
   path: [
+    /^\/api\/.*/,
     /^\/api\/.+\/t0\/*/,
     '/api/user/WXlogin',
     /.+\.[html|ico|jpg)]/,

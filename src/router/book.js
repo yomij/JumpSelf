@@ -2,6 +2,8 @@ const Router = require('koa-router');
 const colorx = require("color-thief-node");
 const superagent = require('superagent')
 
+const bookDao = require('../db/book')
+
 let book = new Router({
 	prefix: '/api/book'
 });
@@ -31,6 +33,33 @@ book.get('/t0/color', async (ctx, next) => {
 			`rgba(${color[0]}, ${color[1]}, ${color[2]}, 1)`
 		],
 		allColor: items
+	}
+})
+
+book.get('/', async (ctx, next) => {
+	const id = ctx.query.bookId
+	if (!id) {
+		ctx.body = {
+			status: 400,
+			message: 'BookId Is Not Present',
+			data: null
+		}
+	} else {
+		try {
+			const book = await bookDao.server.getBookDetail(ctx.query.bookId)
+			console.log(book, book.firstChapter)
+			ctx.body = {
+				status: 200,
+				message: 'success',
+				data: book
+			}
+		} catch(e) {
+			ctx.body = {
+				status: 204,
+				message: e.message,
+				data: null
+			}
+		}
 	}
 })
 
