@@ -3,6 +3,7 @@ module.exports = {
 	BASE_URL: 'https://www.ixdzs.com',
 	CHAPTER_URL: 'https://read.ixdzs.com',
 
+	CHAPTER_URL_M: 'https://m.ixdzs.com/read',
 	TIMEOUT: 10 * 1000,
 
 

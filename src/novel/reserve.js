@@ -265,7 +265,31 @@ module.exports = {
 				})
 		})
 	},
-	
+
+	getChapterM(id, chapterNum) {
+		return new Promise((reslove, reject) => {
+			const url = `${config.CHAPTER_URL_M}/${id}/p${chapterNum}.html`
+			superagent.get(url)
+				.set({'User-Agent': userAgents[parseInt(Math.random() * agent.length)]})
+				.set('X-Forwarded-For', '10.111.123.90')
+				// .proxy(proxy)
+				.timeout(config.TIMEOUT)
+				.end((err, res) => {
+					if (err) {
+						console.log(err)
+						reject(err)
+					} else {
+						let $ = cheerio.load(res.text, {
+							decodeEntities: false //禁用转码
+						});
+						let content =  $('.page-content section').html().replace(/\n/g, '').replace(/^\s+|\s+$/g, '')
+						// content = content.replace(/https\:[\s\S]*/g, '')
+						reslove(content)
+					}
+				})
+		})
+	},
+
 	getText(url) {
 		return new Promise((reslove, reject) => {
 			superagent.get(config.BASEURL + url)

@@ -70,18 +70,34 @@ function dos(list, index, bookId, subCallback) {
 			_id: bookId + cs.chapterNum
 		})
 
+		const random = Math.random()
+
 		setTimeout(() => {
-			reserve.getChapter(cs.source).then(res => {
-				console.log(cs.source)
-				cs.content = res
-				cs.success = true
-				callback(null, cs)
-			}).catch(e => {
-				cs.success = false
-				cs.content = ''
-				callback(null, cs)
-			})
-		}, 1000 * Math.random())
+			if (random > 0.5) {
+				reserve.getChapter(cs.source).then(res => {
+					console.log(cs.source)
+					cs.content = res
+					cs.success = true
+					callback(null, cs)
+				}).catch(e => {
+					cs.success = false
+					cs.content = ''
+					callback(null, cs)
+				})
+			} else {
+				reserve.getChapterM(cs.source).then(res => {
+					console.log(cs.source)
+					cs.content = res
+					cs.success = true
+					callback(null, cs)
+				}).catch(e => {
+					cs.success = false
+					cs.content = ''
+					callback(null, cs)
+				})
+			}
+
+		}, 1000 * random)
 		
 	}, function (err, result) {
 		let failed = []
@@ -113,5 +129,10 @@ function dos(list, index, bookId, subCallback) {
 	});
 }
 
-spider('/d/215/215012/')
+// spider('/d/215/215012/')
 
+async function getChapter() {
+	console.log(await reserve.getChapterM(book.split('/')[3], 1))
+}
+
+getChapter()
