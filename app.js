@@ -5,38 +5,39 @@ const koaBody = require('koa-body');
 const cors = require('koa2-cors');
 const serve = require('koa-static');
 const jwtKoa = require('koa-jwt')
-const jwt = require('jsonwebtoken')
-const verify = require('util').promisify(jwt.verify) // 解密
+let fs = require("fs");
 
 const Router = require('./src/router');
 const Router2b = require('./src/router2b');
 const config = require('./src/config');
 const Socket = require('./src/utils/socket')
 
+require('./src/utils/console')
+
 const main = serve(path.join(__dirname, 'src', 'public'));
 const app = new Koa();
+
+
 const server = require('http').createServer(app.callback());
+const serverHttps = require('https').createServer({
+  key : fs.readFileSync("./https/2030487_www.yomij.cn.key"),
+  cert: fs.readFileSync("./https/2030487_www.yomij.cn.pem")
+}, app.callback())
 
-
-// 封装console
-let customizeFn = {
-  error (str) {
-    console.log("\033[31m " + str + " \033[0m")
-  },
-  info (str) {
-    console.log("\033[36m " + str+ " \033[0m")
-  },
-  wran (str) {
-    console.log("\033[43;37m " + str + " \033[0m")
-  },
-  success (str) {
-    console.log("\033[32m " + str + " \033[0m")
+// 跨域配置
+app.use(cors())
+// 静态文件
+app.use(main);
+// 上传限制
+app.use(koaBody({
+  multipart: true,
+  formidable: {
+    maxFileSize: 20 * 1024 * 1024 // 设置上传文件大小最大限制
   }
-}
+}));
 
-console = Object.assign(console, customizeFn)
 
-// Custom 401 handling if you don't want to expose koa-jwt errors to users
+// Custom 401 handling
 app.use(function(ctx, next){
   return next().catch((err) => {
     if (401 == err.status) {
@@ -56,10 +57,27 @@ app.use(function(ctx, next){
 app.use(jwtKoa(
   {
     debug: true,
-    secret: config.SECRET
+    secret: config.SECRET,
+    // getToken(ctx, opts) {
+    //   if (!ctx.header || !ctx.header.authorization) {
+    //     return;
+    //   }
+    //   const parts = ctx.header.authorization.split(' ');
+    //   console.log(parts)
+    //   if (parts.length === 2) {
+    //     const scheme = parts[0];
+    //     const credentials = parts[1];
+    //     if (/^Bearer$/i.test(scheme)) {
+    //       return credentials;
+    //     }
+    //   }
+    //   if (!opts.passthrough) {
+    //     ctx.throw(401, 'Bad Authorization header format. Format is "Authorization: Bearer <token>"');
+    //   }
+    // }
   }).unless({
   path: [
-    /^\/api\/.*/,
+    // /^\/api\/.*/,
     /^\/api\/.+\/t0\/*/,
     '/api/user/WXlogin',
     /.+\.[html|ico|jpg)]/,
@@ -68,10 +86,10 @@ app.use(jwtKoa(
 }));
 
 
+
 // logger
 app.use(async (ctx, next) => {
   await next();
-  console.log(ctx.user)
   const body = ctx.request.body
   const query = ctx.query
   const rt = ctx.response.get('X-Response-Time')
@@ -86,16 +104,10 @@ app.use(async (ctx, next) => {
   ctx.set('X-Response-Time', `${ms}ms`);
 });
 
-app.use(cors())
-app.use(main);
-app.use(koaBody({
-  multipart: true,
-  formidable: {
-    maxFileSize: 20 * 1024 * 1024 // 设置上传文件大小最大限制
-  }
-}));
+
 app.use(Router.routes());
 app.use(Router2b.routes())
+
 
 global.socket = new Socket(server, ['book'])
 
@@ -112,3 +124,16 @@ server.listen(config.APP_PORT, () => console.log(`running http://${(function () 
     }
   }
 })()}:${config.APP_PORT}`));
+
+serverHttps.listen(config.HTTPS_PORT, () => console.log(`running http://${(function () {
+  let interfaces = require('os').networkInterfaces();
+  for (let devName in interfaces) {
+    let iface = interfaces[devName];
+    for (let i = 0; i < iface.length; i++) {
+      let alias = iface[i];
+      if (alias.family === 'IPv4' && alias.address !== '127.0.0.1' && !alias.internal) {
+        return alias.address;
+      }
+    }
+  }
+})()}:${config.HTTPS_PORT}`))

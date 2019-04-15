@@ -109,6 +109,7 @@ user.post('/login', async (ctx) => {
 
 user.get('/', async (ctx) => {
   const user = ctx.state.user
+  console.log(ctx.state.user, ctx.state.jwtdata)
   const userInfo = await userDao.queryUserById(user.id)
   ctx.body = {
     status: 200,

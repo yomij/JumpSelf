@@ -208,7 +208,6 @@ module.exports = {
 	},
 	
 	getChapters(url) {
-		console.log(url)
 		return new Promise((resolve, reject) => {
 			superagent.get(url)
 				.set('header', {
@@ -219,7 +218,6 @@ module.exports = {
 				})
 				.end((err, res) => {
 					if (err) {
-						console.log(err)
 						reject(err)
 					} else {
 						let $ = cheerio.load(res.text, {
@@ -250,9 +248,8 @@ module.exports = {
 				// .proxy(proxy)
 				.timeout(config.TIMEOUT)
 				.end((err, res) => {
-					console.log(`${config.BASE_URL}${url}`)
+					console.log(`${url}`)
 					if (err) {
-						console.log(err)
 						reject(err)
 					} else {
 						let $ = cheerio.load(res.text, {
@@ -269,6 +266,7 @@ module.exports = {
 	getChapterM(id, chapterNum) {
 		return new Promise((reslove, reject) => {
 			const url = `${config.CHAPTER_URL_M}/${id}/p${chapterNum}.html`
+			console.log(url, id, chapterNum)
 			superagent.get(url)
 				.set({'User-Agent': userAgents[parseInt(Math.random() * agent.length)]})
 				.set('X-Forwarded-For', '10.111.123.90')

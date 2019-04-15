@@ -53,31 +53,19 @@ module.exports = {
     return await UserModel.findById(id, {_id: 0, __v: 0})
   },
 
-  addSub (userId, subscription) {
-    UserModel.update({
+  async addSub (userId, subscription) {
+    return await UserModel.update({
       _id: userId
     }, {
       '$push': {
         subscription
       }
-    }, function(err, data) {
-      if (err) {
-        console.log(err);
-      } else {
-        console.log(data);
-      }
     });
   },
-
-  unSub (userId, subBookId) {
+  
+  async unSub (userId, subBookId) {
     //删除
-    UserModel.update({_id: userId},
-      {'$pull':{ subscription : { id : subBookId }}}, function(err, data){
-        if(err) {
-          console.log(err);
-        }
-        console.log(data);
-      });
+    return await UserModel.update({_id: userId}, {'$pull':{ subscription : { id : subBookId }}});
   }
 
 }

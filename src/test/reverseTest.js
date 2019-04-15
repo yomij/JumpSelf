@@ -4,6 +4,7 @@ const bookDao = require('../db/book')
 const chapterDao = require('../db/chapter')
 const proxyText = require('./proxyTest')
 const color = require('../utils/getMainColor')
+const config = require('../config').novelWebConfig
 
 const async = require('async');
 const spiderConfig = {
@@ -85,8 +86,8 @@ function dos(list, index, bookId, subCallback) {
 					callback(null, cs)
 				})
 			} else {
-				reserve.getChapterM(cs.source).then(res => {
-					console.log(cs.source)
+				const id = cs.source.split('/')[4]
+				reserve.getChapterM(id, cs.chapterNum + 1).then(res => {
 					cs.content = res
 					cs.success = true
 					callback(null, cs)
@@ -97,7 +98,7 @@ function dos(list, index, bookId, subCallback) {
 				})
 			}
 
-		}, 1000 * random)
+		}, (cs.chapterNum - spiderConfig.MAX_SINGLE_COUNT * index) * random * spiderConfig.SPIDER_TIMEOUT)
 		
 	}, function (err, result) {
 		let failed = []
@@ -129,10 +130,10 @@ function dos(list, index, bookId, subCallback) {
 	});
 }
 
-// spider('/d/215/215012/')
+spider('/d/215/215024/')
 
-async function getChapter() {
-	console.log(await reserve.getChapterM(book.split('/')[3], 1))
-}
-
-getChapter()
+// async function getChapter() {
+// 	console.log(await reserve.getChapterM(book.split('/')[3], 1))
+// }
+//
+// getChapter()
