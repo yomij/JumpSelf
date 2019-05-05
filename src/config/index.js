@@ -7,6 +7,7 @@ module.exports =  {
 	APP_PORT: 3100,
 	HTTPS_PORT: 443,
 	SECRET: 'YOMI',
+	IMG_SERVER: 'http://img.yomij.cn/',
 	novelWebConfig,
 	dbConfig,
 	folderConfig,

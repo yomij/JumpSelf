@@ -43,9 +43,17 @@ const format = {
 	'最新章节': {
 		key: 'latestUpdate',
 		format(text) {
+			const times = text.match(/^\d+/g)[0]
+			if (!times) return new Date().getTime()
 			if (/^\d+小时/g.test(text)) {
-				const hours = text.match(/^\d+/g)[0]
-				return new Date().getTime() - hours * 60 * 60 * 1000
+				return new Date().getTime() - times * 60 * 60 * 1000
+			} else if (/^\d+分/g.test(text)) {
+				return new Date().getTime() - times * 60 * 1000
+			} else if (/^\d+天/g.test(text)) {
+				return new Date().getTime() - times * 24 * 60 * 60 * 1000
+			} else {
+				if (times && times > 1000) return new Date(text).getTime()
+				return new Date().getTime()
 			}
 		}
 	},
@@ -56,9 +64,17 @@ const format = {
 	'时间': {
 		key: 'latestUpdate',
 		format(text) {
+			const times = text.match(/^\d+/g)[0]
+			if (!times) return new Date().getTime()
 			if (/^\d+小时/g.test(text)) {
-				const hours = text.match(/^\d+/g)[0]
-				return new Date().getTime() - hours * 60 * 60 * 1000
+				return new Date().getTime() - times * 60 * 60 * 1000
+			} else if (/^\d+分/g.test(text)) {
+				return new Date().getTime() - times * 60 * 1000
+			} else if (/^\d+天/g.test(text)) {
+				return new Date().getTime() - times * 24 * 60 * 60 * 1000
+			} else {
+				if (times && times > 1000) return new Date(text).getTime()
+				return new Date().getTime()
 			}
 		}
 	},
@@ -140,7 +156,7 @@ module.exports = {
 	async getBook(url, useIp) {
 		// console.log('getBook', url, 'http://' + useIp)
 		return new Promise((resolve, reject) => {
-			superagent.get(config.BASE_URL + url)
+			superagent.get(url.indexOf('http') > -1 ? url : config.BASE_URL + url)
 				.set('X-Forwarded-For', '10.131.128.90')
 				.set('header', {
 					'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
@@ -180,11 +196,33 @@ module.exports = {
 							description: $('.d_co').text().replace(/\s*|\t|\r|\n|/g, ''),
 							extra: {
 								urls: {
-									mainUrl: config.BASE_URL + url
+									mainUrl: url.indexOf('http') > -1 ? url : config.BASE_URL + url
 								}
 							}
 						})
 						resolve(book)
+					}
+				});
+		})
+	},
+
+	getHottestURL (page) {
+		return new Promise((resolve, reject) => {
+			console.log(`${config.HOTTEST}${page}`)
+			superagent.get(`${config.HOTTEST}${page}`)
+				.charset('utf-8')
+				.set('X-Forwarded-For', '10.111.128.90')
+				.end((err, res) => {
+					if (err) {
+						reject(err)
+					} else {
+						let books = []
+						let $ = cheerio.load(res.text);
+						$('.box_k ul li').each((index, item) => {
+							item = $(item)
+							books.push(config.BASE_URL + item.find('.b_name a').attr('href'))
+						})
+						resolve(books)
 					}
 				});
 		})
@@ -207,9 +245,9 @@ module.exports = {
 		})
 	},
 	
-	getChapters(url) {
+	getChapters(url, bookId) {
 		return new Promise((resolve, reject) => {
-			superagent.get(url)
+			superagent.get(url.indexOf('http') > -1 ? url : config.CHAPTER_URL + url)
 				.set('header', {
 					'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
 					'Accept-Encoding': 'gzip, deflate',
@@ -231,6 +269,11 @@ module.exports = {
 								title: item.text(),
 								source: url + $(item).attr('href'),
 								wordCount: $(item).attr('title').split(':')[1] || 0
+							}
+							if (bookId) {
+								chapter._id = bookId + i
+								chapter.bookId = bookId
+								chapter.content = ''
 							}
 							chapters.push(chapter)
 						})
@@ -303,6 +346,6 @@ module.exports = {
 					}
 				});
 		})
-	}
+	},
 	
 }

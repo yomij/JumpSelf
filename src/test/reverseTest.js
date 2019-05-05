@@ -5,6 +5,7 @@ const chapterDao = require('../db/chapter')
 const proxyText = require('./proxyTest')
 const color = require('../utils/getMainColor')
 const config = require('../config').novelWebConfig
+const reserveIndex = require('../novel')
 
 const async = require('async');
 const spiderConfig = {
@@ -130,7 +131,57 @@ function dos(list, index, bookId, subCallback) {
 	});
 }
 
-spider('/d/215/215024/')
+async function insertBooksHottest (page = 1) {
+	const bookurlList = await reserve.getHottestURL(page)
+	console.log(bookurlList, bookurlList.length)
+	async.mapLimit(bookurlList, 1, async function (book, callback) {
+		let bookInfo = null
+		try {
+			console.log(book)
+			bookInfo = await reserve.getBook(book)
+			console.log(bookInfo)
+			bookInfo.mainImg = await color(bookInfo.mainImg.url)
+			book = await bookDao.server.insert(bookInfo)
+			book.chapterUrl = bookInfo.chapterUrl
+			const cs = await reserve.getChapters(book.chapterUrl, book._id)
+			await chapterDao.insertChapters(cs)
+		} catch (e) {
+			console.log('failed', e.message)
+			// return spider(book)
+			return {title: e.message}
+		}
+
+		return book
+
+	}, function (err, result) {
+		if(err) console.log(err.message)
+		result.forEach(item => {
+			console.log(item.title ? item.title : item)
+		})
+	})
+}
+
+async function chapter(s) {
+	const arr = 'https://read.ixdzs.com/66/66746/p3.html'.split('/')
+console.log(	arr.pop().match(/\d+/g)[0], arr.pop())
+	// return await reserveIndex.getChapter(s)
+}
+
+
+
+// /d/217/217500/
+
+
+spider('/d/216/216693/')
+// insertBooksHottest(10)
+// chapter()
+
+
+
+
+
+
+
 
 // async function getChapter() {
 // 	console.log(await reserve.getChapterM(book.split('/')[3], 1))

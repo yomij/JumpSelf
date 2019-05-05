@@ -25,31 +25,32 @@ async function spider(book, clist) {
       return spider(book, clist)
     }
     book = await bookDao.server.insert(bookInfo)
-    console.log(book)
+    // console.log(book)
     book.chapterUrl = bookInfo.chapterUrl
-    console.log(book, book.mainImg)
+    // console.log(book, book.mainImg)
 
-    console.log(await color(book.mainImg))
+    // console.log(await color(book.mainImg))
   }
   // console.log(await color(book.mainImg))
-  // const cs = clist ? clist : await reserve.getChapters(book.chapterUrl)
-  // let list = []
-  // while (cs.length) {
-  //   list.push(cs.splice(0, spiderConfig.MAX_SINGLE_COUNT))
-  // }
-  // let index = 0
-  // async.mapLimit(list, 1, function (subList, callback) {
-  //   dos(subList, index++, book._id, callback)
-  // }, function (err, result) {
-  //   const failed = []
-  //   result.forEach(item => {
-  //     failed.push(...item.data.failed)
-  //   })
-  //   return {
-  //     failCount: failed.length,
-  //     failed
-  //   }
-  // })
+  const cs = clist ? clist : await reserve.getChapters(book.chapterUrl)
+  console.log(cs)
+  let list = []
+  while (cs.length) {
+    list.push(cs.splice(0, spiderConfig.MAX_SINGLE_COUNT))
+  }
+  let index = 0
+  async.mapLimit(list, 1, function (subList, callback) {
+    dos(subList, index++, book._id, callback)
+  }, function (err, result) {
+    const failed = []
+    result.forEach(item => {
+      failed.push(...item.data.failed)
+    })
+    return {
+      failCount: failed.length,
+      failed
+    }
+  })
 }
 
 function dos(list, index, bookId, subCallback) {
@@ -106,9 +107,20 @@ async function search (text) {
   return await reserve.search(text)
 }
 
+async function getChapter(source) {
+  if (Math.random() > 0.5) {
+    return await reserve.getChapter(source)
+  } else {
+    const arr = source.split('/')
+    const cn = 	arr.pop().match(/\d+/g)[0]
+    const id = arr.pop()
+    return await reserve.getChapterM(id, cn)
+  }
+}
 
 module.exports = {
   spider,
-  search
+  search,
+  getChapter
 }
 

@@ -11,7 +11,6 @@ class DB {
 
 	connect() {
 		DB.connected[this.name];
-
 		if (this.name in DB.connected) {
 			return DB.connected[this.name];
 		}

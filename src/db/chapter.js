@@ -32,12 +32,23 @@ module.exports = {
 	},
   async findChaptersByBookId(id, pageNo, size) {
     const totalCount = await chapterModel.countDocuments({ bookId: id })
-    const chapterList = await chapterModel.find({ bookId: id }, 'createTime _id title').sort({chapterNum : 0}).skip((pageNo - 1) * size).limit(size)
+    const chapterList = await chapterModel.find({ bookId: id }, 'createTime _id title chapterNum').sort({chapterNum : 0}).skip((pageNo - 1) * size).limit(size)
     return {
       totalCount,
       chapterList
     }
   },
+	async findChaptersMore(id, num, size) {
+		const totalCount = await chapterModel.countDocuments({ bookId: id })
+		const chapterList = await chapterModel.find({
+			bookId: id,
+			chapterNum: {$gt: num}
+		}, 'createTime _id title chapterNum').sort({chapterNum : 0}).limit(size)
+		return {
+			totalCount,
+			chapterList
+		}
+	},
   findChapterById (id) {
     return chapterModel.findById(id)
   },
@@ -46,5 +57,8 @@ module.exports = {
 	},
 	findFirst (id) {
 		return chapterModel.findOne({ bookId: id, chapterNum: 0 })
+	},
+	async updateChapter (id, content) {
+		return await chapterModel.updateOne({_id: id}, {content})
 	}
 }

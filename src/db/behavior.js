@@ -2,43 +2,135 @@ const DB = require('../utils/dbConnect')
 
 const db = new DB('yomi', 27017)
 
-const userSchema = db.createSchema({
-  bookId: { type: db.mongoose.Schema.Types.ObjectId, ref: 'Book' },
-  userId:{ type: db.mongoose.Schema.Types.ObjectId, ref: 'User' },
-  time: Date,
-  type: Number, // 0 订阅, 1 分享， 2 阅读， 4 点击
+const behaviorSchema = db.createSchema({
+  book: { type: db.mongoose.Schema.Types.ObjectId, ref: 'book' },
+  user:{ type: db.mongoose.Schema.Types.ObjectId, ref: 'user' },
+  interest: Number,
+  lastUpdateTime: {type: Date, default: Date.now()}, // 最后行为时间 （不包括点击）
+  everSub: {default: false, type: Boolean}, // 订阅过
+  grade: {default: -1, type: Number}, // 评分
+  clickCount: {default: 1, type: Number}, // 点击 次数
+  readCount: {default: 1, type: Number}, // 读的次数
+  totalReadTime: Number, // 阅读时间
+  shareCount: {default: 0, type: Number} // 分享次数
 })
 
-const UserModel = db.connect().model('user', userSchema);
+const behaviorModel = db.connect().model('behavior', behaviorSchema);
 
 // chapterSchema.index({bookId: 1})
 
+const dao = {
+  model: behaviorModel,
 
-module.exports = {
-  model: UserModel,
-  async insertUser(user) {
-    const u = new UserModel(user)
-    const info = await u.save()
-    return info
-  },
-  queryUserByOpenId (openId) {
-    return new Promise((resolve, reject) => {
-      UserModel.find({openId}, '_id nickname phone openId', (err, doc) => {
-        if (err) reject(err)
-        resolve(doc)
-      })
+  // 评分
+  async grade(bookId, userId, grade) {
+    return await behaviorModel.findOneAndUpdate({
+      book: bookId,
+      user: userId
+    }, {
+      grade,
+      everSub: true
+    }, {
+      new: true,
+      upsert: true,
+      setDefaultsOnInsert: true,
     })
   },
-  queryUserByPhone (phoneNum) {
-    return new Promise((resolve, reject) => {
-      UserModel.find({phoneNum}, '_id openId nickname', (err, doc) => {
-        if (err) reject(err)
-        resolve(doc)
-      })
+  // 添加订阅
+  async addSub(bookId, userId) {
+    return await behaviorModel.findOneAndUpdate({
+      book: bookId,
+      user: userId
+    }, {
+      everSub: true,
+      lastUpdateTime: Date.now(),
+      $inc:{
+        clickCount: 1
+      }
+    }, {
+      new: true,
+      upsert: true,
+      setDefaultsOnInsert: true
     })
   },
-  async queryUserById (id) {
-    console.log(id)
-    return await UserModel.findById(id, {_id: 0, __v: 0})
+  async totalRead(userId) {
+    return await behaviorModel.aggregate([
+      {$match: {user: {$eq: require('mongoose').Types.ObjectId(userId)}, totalReadTime: {$gt: 0}}},
+      {$group: {_id: '$user', readTime:{ $sum: '$totalReadTime' }, count: { $sum: 1 }}},
+    ])
+  }
+
+}
+
+const bookDao  = require('./book')
+
+const server = {
+  async add (userId, books, data) {
+    if(!data.length) return
+    for(let i = 0; i< data.length; i++) {
+      await behaviorModel.update({
+        book: books[i],
+        user: userId
+      }, data[i], {
+        new: true,
+        upsert: true,
+        setDefaultsOnInsert: true
+      })
+      await bookDao.addTotal(books[i], ~~data[i].clickCount , ~~data[i].shareCount, ~~data[i].readCount)
+    }
+    return true
+  },
+  async  getRecommendData(id) {
+    let res = await behaviorModel.aggregate([
+      {$project: {
+          _id: 1,
+          book: 1,
+          user: 1,
+          clickCount: 1,
+          everSub: true,
+          grade: 1,
+          lastUpdateTime: 1,
+          readCount: 1,
+          shareCount: 1,
+          // gradex: [ "$grade", "$readCount", '$shareCount' ]
+          gradex: {$add: [{$multiply: [ "$grade", 100 ]}, {$multiply: [ "$readCount", 1 ]}, {$multiply: [ "$shareCount", 10 ]}]}
+        }},
+      // {$match: {user: {$ne: require('mongoose').Types.ObjectId(id)}}},
+      {$group: {_id: '$book', user: {$addToSet: '$user'}, gradex: {$addToSet: '$gradex'}}},
+
+    ])
+    const temp = {}
+    res.map(item => {
+      temp[item._id] = {}
+      item.user.forEach((u, i) => {
+        temp[item._id][u] = item.gradex[i]
+      })
+    })
+
+    let personal = await behaviorModel.aggregate([
+      {$project: {
+          _id: 1,
+          book: 1,
+          user: 1,
+          clickCount: 1,
+          everSub: true,
+          grade: 1,
+          lastUpdateTime: 1,
+          readCount: 1,
+          shareCount: 1,
+          // gradex: [ "$grade", "$readCount", '$shareCount' ]
+          gradex: {$add: [{$multiply: [ "$grade", 100 ]}, {$multiply: [ "$readCount", 1 ]}, {$multiply: [ "$shareCount", 10 ]}]}
+        }},
+      {$match: {user: {$eq: require('mongoose').Types.ObjectId(id)}}},
+      {$sort: {gradex: 1}},
+      {$group: {_id: '$user', book: {$addToSet: '$book'}, gradex: {$addToSet: '$gradex'}}},
+
+    ])
+    return {
+      behavior: temp,
+      personalInfo: personal[0]
+    }
   }
 }
+
+module.exports = Object.assign(dao, {server})

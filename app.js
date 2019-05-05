@@ -5,12 +5,15 @@ const koaBody = require('koa-body');
 const cors = require('koa2-cors');
 const serve = require('koa-static');
 const jwtKoa = require('koa-jwt')
+const jwt = require('jsonwebtoken')
+const verify = require('util').promisify(jwt.verify)
 let fs = require("fs");
 
 const Router = require('./src/router');
 const Router2b = require('./src/router2b');
 const config = require('./src/config');
 const Socket = require('./src/utils/socket')
+
 
 require('./src/utils/console')
 
@@ -30,6 +33,7 @@ app.use(cors())
 app.use(main);
 // 上传限制
 app.use(koaBody({
+  strict: false,
   multipart: true,
   formidable: {
     maxFileSize: 20 * 1024 * 1024 // 设置上传文件大小最大限制
@@ -38,7 +42,15 @@ app.use(koaBody({
 
 
 // Custom 401 handling
-app.use(function(ctx, next){
+app.use(async (ctx, next) => {
+  ctx.verify = verify
+  if (ctx.query.token) {
+    try {
+      ctx.state.userToken = await verify(ctx.query.token, config.SECRET)
+    } catch (e) {
+      ctx.state.userToken = null
+    }
+  }
   return next().catch((err) => {
     if (401 == err.status) {
       ctx.status = 401;
@@ -77,9 +89,11 @@ app.use(jwtKoa(
     // }
   }).unless({
   path: [
-    // /^\/api\/.*/,
+    /^\/api\/user\/phone*/,
+    /^\/api\/.+\/t0/,
     /^\/api\/.+\/t0\/*/,
     '/api/user/WXlogin',
+    '/api/user/login',
     /.+\.[html|ico|jpg)]/,
     /^\/api2b\/*/
   ] //数组中的路径不需要通过jwt验证
@@ -108,9 +122,8 @@ app.use(async (ctx, next) => {
 app.use(Router.routes());
 app.use(Router2b.routes())
 
-
+global.verify = verify
 global.socket = new Socket(server, ['book'])
-
 // console.log(Router)
 server.listen(config.APP_PORT, () => console.log(`running http://${(function () {
   let interfaces = require('os').networkInterfaces();
