@@ -37,14 +37,14 @@ const dao = {
   },
   queryUserByOpenId (openId) {
     return new Promise((resolve, reject) => {
-      UserModel.find({openId}, '_id nickname phone openId', (err, doc) => {
+      UserModel.find({openId}, '_id nickname phone openId avatarUrl', (err, doc) => {
         if (err) reject(err)
         resolve(doc)
       })
     })
   },
   async queryUserByPhone (phone) {
-    return UserModel.find({phone}, '_id openId nickname password phone')
+    return UserModel.find({phone}, '_id openId nickname avatarUrl password phone')
   },
   async getSubscription (userId, bookId) {
     return await UserModel.findOne({

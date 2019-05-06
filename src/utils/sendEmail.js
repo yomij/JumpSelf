@@ -11,7 +11,7 @@ let transporter = nodemailer.createTransport({
 	auth: {
 		user: '1130806423@qq.com',
 		//这里密码不是qq密码，是你设置的smtp密码
-		pass: 'xtkwcbzjvfrfjdjj'
+		pass: 'llgajqrsjnubifga'
 	},
 	tls: {
 		rejectUnauthorized: false
@@ -20,7 +20,7 @@ let transporter = nodemailer.createTransport({
 
 
 module.exports = function send(title, artArr) {
-
+console.log('aaa')
 	if (!artArr.length) {
 		return;
 	}
@@ -35,18 +35,20 @@ module.exports = function send(title, artArr) {
 	};
 
 	artArr.forEach((item, index) => {
-		if (item.title && item.content) {
+		if (item.problem) {
 			mailOptions.html +=
 				`<div>
-					<div style='display: flex'>
-						<img src='${item.avatarUrl}'/>
-						<h3>${item.id} ${item.nickname}</h3>
+					<div style='display: flex; align-items: center;font-size: 16px'>
+						<img style="height: 60px;width: 60px; border-radius: 60px;margin-right: 20px" src='${item.avatarUrl}'/>
+						<div>
+							<p>${item.nickname}</p>
+							<p>${item.id}</p>
+						</div>
 					</div>
-					<p>${item.problem}</p>
+					<p style='font-size: 16px'>${item.problem}</p>
 				</div>`;
 		}
 	});
-
 	return new Promise((reslove, reject) => {
 		transporter.sendMail(mailOptions, function (error, info) {
 			if (error) {

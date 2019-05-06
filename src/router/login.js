@@ -3,10 +3,12 @@ const request = require('request');
 const jwt = require('jsonwebtoken')
 const crypto = require('crypto');
 
+const file = require("../utils/file")
+const emilSender = require("../utils/sendEmail")
+const config = require("../config")
+
 
 const userDao = require("../db/user")
-
-const config = require('../config')
 
 
 let user = new Router({
@@ -116,6 +118,7 @@ user.post('/WXlogin', async (ctx, next) => {
       }
     } else {
       const userInfo = user[0]
+      console.log(userInfo)
       const token = jwt.sign({
         id: userInfo._id,
         nickname: userInfo.nickname,
@@ -251,6 +254,67 @@ user.post('/verify', async (ctx, next) => {
       message: 'verify succsss',
       data: true
     }
+  }
+})
+
+let problems = []
+// 取消
+user.post('/problem', async (ctx, next) => {
+
+  const {problem} = ctx.request.body
+  if (!problem) {
+    return ctx.body = {
+      status: '400',
+      data: null,
+      message: 'params are not present'
+    }
+  }
+  const user = ctx.state.user
+  const id = user.id
+  problems.push({
+    id: user.id,
+    avatarUrl: user.avatarUrl,
+    nickname: user.nickname,
+    problem
+  })
+  if (problem.length >= config.PROBLEM_SEND_COUNT) {
+    await emilSender('Yomi 问题反馈', problems)
+    await file.writeJson(problems, 'Problem ' + new Date().toString())
+  }
+  ctx.body = {
+    status: 200,
+    message: 'success',
+    data: true
+  }
+})
+
+// 取消
+user.get('/t0/problem', async (ctx, next) => {
+
+  const {problem} = ctx.request.query
+  if (!problem) {
+    return ctx.body = {
+      status: '400',
+      data: null,
+      message: 'params are not present'
+    }
+  }
+  const user = ctx.state.userToken
+  const id = user.id
+  problems.push({
+    id: user.id,
+    avatarUrl: user.avatarUrl,
+    nickname: user.nickname,
+    problem
+  })
+  if (problem.length >= config.PROBLEM_SEND_COUNT) {
+    await emilSender('Yomi 问题反馈', problems)
+    await file.writeJson(problems, 'Problem ' + new Date().toLocaleDateString())
+  }
+  ctx.body = {
+    status: 200,
+    message: 'success',
+    data: true
   }
 })
 

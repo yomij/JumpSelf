@@ -49,7 +49,7 @@ async function test(dao, func) {
   //   })
   //   res.push(temp)
   // }
-  const res =await behaviorDao.totalRead('5cc477282b8c663720c50433')
+  const res =await behaviorDao.totalRead('5c9f584f81a4b6449c52ad14')
 console.log(res)
 
   // console.log(books)
