@@ -99,12 +99,13 @@ user.post('/WXlogin', async (ctx, next) => {
         nickname: body.userInfo.nickName,
         avatarUrl: body.userInfo.avatarUrl,
       })
-      console.info( JSON.stringify(userInfo))
+      console.info(JSON.stringify(userInfo))
       const token = jwt.sign({
         id: userInfo._id,
         nickname: userInfo.nickname,
         openId: userInfo.openId,
-        phone: userInfo.phone || ''
+        phone: userInfo.phone || '',
+        avatarUrl: body.userInfo.avatarUrl,
       }, config.SECRET, { expiresIn: '24h' });
       ctx.body = {
         status: 200,
@@ -119,7 +120,8 @@ user.post('/WXlogin', async (ctx, next) => {
         id: userInfo._id,
         nickname: userInfo.nickname,
         openId: userInfo.openId,
-        phone: userInfo.phone || ''
+        phone: userInfo.phone || '',
+        avatarUrl: userInfo.avatarUrl,
       }, config.SECRET, { expiresIn: '24h' });
       ctx.body = {
         status: 200,

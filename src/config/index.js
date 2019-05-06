@@ -8,6 +8,7 @@ module.exports =  {
 	HTTPS_PORT: 443,
 	SECRET: 'YOMI',
 	IMG_SERVER: 'http://img.yomij.cn/',
+	PROBLEM_SEND_COUNT: 1,
 	novelWebConfig,
 	dbConfig,
 	folderConfig,

@@ -123,4 +123,17 @@ behavior.post('/add', async (ctx, next) => {
   }
 })
 
+
+// 阅读统计
+behavior.get('/readInfo', async (ctx, next) => {
+  const user = ctx.state.user.id
+  const data = await behaviorDao.totalRead(user)
+  console.log(data)
+  ctx.body = {
+    status: 200,
+    data: data[0] || {},
+    message: 'success'
+  }
+})
+
 module.exports = behavior;

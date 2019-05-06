@@ -3,6 +3,10 @@ const userDao = require("../db/user")
 const behaviorDao = require("../db/behavior")
 const bookDao = require("../db/book")
 
+const file = require("../utils/file")
+const emilSender = require("../utils/sendEmail")
+const config = require("../config")
+
 let user = new Router({
 	prefix: '/api/subscription'
 });
@@ -152,5 +156,35 @@ user.post('/unoverhead', async (ctx, next) => {
 	}
 })
 
+let problems = []
+// 取消
+user.post('/problem', async (ctx, next) => {
+	
+	const {problem} = ctx.request.body
+	if (!problem) {
+		return ctx.body = {
+			status: '400',
+			data: null,
+			message: 'params are not present'
+		}
+	}
+	const user = ctx.state.user
+	const id = user.id
+	problems.push({
+		id: user.id,
+		avatarUrl: user.avatarUrl,
+		nickname: user.nickname,
+		problem
+	})
+	if (problem.length >= config.PROBLEM_SEND_COUNT) {
+		await emilSender('Yomi 问题反馈', problems)
+		await file.writeJson(problems, 'Problem ' + new Date().toLocaleDateString())
+	}
+	ctx.body = {
+		status: 200,
+		message: 'success',
+		data: true
+	}
+})
 
 module.exports = user;
