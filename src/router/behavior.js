@@ -101,7 +101,15 @@ behavior.post('/add', async (ctx, next) => {
   if (!bev) return ctx.body = {status: 400}
   else {
     const data = bev
-    const ks = [{key: 'clickCount', v: 1}, {key: 'readCount', v: 1}, {key:'totalReadTime', v: 0}, {key: 'shareCount', v: 10}]
+    const ks = [
+      {},
+      {key: 'clickCount', v: 1},
+      {key: 'readCount', v: 1},
+      {key:'totalReadTime', v: 0},
+      {key: 'shareCount', v: 10},
+      {key: 'commentCount', v: 3},
+      {key: 'likeCount', v: 1}
+    ]
     const res = []
     const books = []
     for(let key in data) {

@@ -2,8 +2,8 @@ const fs = require('fs');
 const config = require('../config').folderConfig;
 
 module.exports = {
-	writeJson(proxyArr, name) {
-		let writeStream = fs.createWriteStream(`${config.P_PATH}/${name}.json`);
+	writeJson(proxyArr, name, path = 'P_PATH') {
+		let writeStream = fs.createWriteStream(`${config[path]}/${name}.json`);
 		writeStream.on('finish', function(){
 			console.log('Write Success');
 		});

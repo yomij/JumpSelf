@@ -323,7 +323,7 @@ module.exports = {
 						let $ = cheerio.load(res.text, {
 							decodeEntities: false //禁用转码
 						});
-						let content =  $('.page-content section').html().replace(/\n/g, '').replace(/^\s+|\s+$/g, '')
+						let content =  ($('.page-content section').html() || '').replace(/\n/g, '').replace(/^\s+|\s+$/g, '')
 						// content = content.replace(/https\:[\s\S]*/g, '')
 						reslove(content)
 					}

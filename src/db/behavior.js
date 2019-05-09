@@ -11,6 +11,8 @@ const behaviorSchema = db.createSchema({
   grade: {default: -1, type: Number}, // 评分
   clickCount: {default: 1, type: Number}, // 点击 次数
   readCount: {default: 1, type: Number}, // 读的次数
+  commentCount: {default: 0, type: Number}, // 评论
+  likeCount: {default: 0, type: Number}, // 点赞
   totalReadTime: Number, // 阅读时间
   shareCount: {default: 0, type: Number} // 分享次数
 })
@@ -71,12 +73,12 @@ const server = {
       await behaviorModel.update({
         book: books[i],
         user: userId
-      }, data[i], {
+      }, {$inc: data[i]}, {
         new: true,
         upsert: true,
         setDefaultsOnInsert: true
       })
-      await bookDao.addTotal(books[i], ~~data[i].clickCount , ~~data[i].shareCount, ~~data[i].readCount)
+      await bookDao.addTotal(books[i], ~~data[i].clickCount , ~~data[i].shareCount, ~~data[i].readCount, ~~data[i].likeCount, ~~ data[i].commentCount)
     }
     return true
   },
@@ -93,7 +95,12 @@ const server = {
           readCount: 1,
           shareCount: 1,
           // gradex: [ "$grade", "$readCount", '$shareCount' ]
-          gradex: {$add: [{$multiply: [ "$grade", 100 ]}, {$multiply: [ "$readCount", 1 ]}, {$multiply: [ "$shareCount", 10 ]}]}
+          gradex: {
+            $add: [
+              {$multiply: [ "$grade", 100 ]},
+              {$multiply: [ "$readCount", 1 ]},
+              {$multiply: [ "$shareCount", 10 ]}
+            ]}
         }},
       // {$match: {user: {$ne: require('mongoose').Types.ObjectId(id)}}},
       {$group: {_id: '$book', user: {$addToSet: '$user'}, gradex: {$addToSet: '$gradex'}}},
@@ -113,18 +120,26 @@ const server = {
           book: 1,
           user: 1,
           clickCount: 1,
-          everSub: true,
+          everSub: 1,
           grade: 1,
           lastUpdateTime: 1,
           readCount: 1,
           shareCount: 1,
+          likeCount: 1,
+          commentCount: 1,
           // gradex: [ "$grade", "$readCount", '$shareCount' ]
-          gradex: {$add: [{$multiply: [ "$grade", 100 ]}, {$multiply: [ "$readCount", 1 ]}, {$multiply: [ "$shareCount", 10 ]}]}
+          gradex: {
+            $add: [
+              {$multiply: [ "$grade", 100 ]},
+              {$multiply: [ "$readCount", 0.1 ]},
+              {$multiply: [ "$shareCount", 5 ]},
+              {$multiply: [ "$likeCount", 1 ]},
+              {$multiply: [ "$commentCount", 3 ]},
+            ]}
         }},
       {$match: {user: {$eq: require('mongoose').Types.ObjectId(id)}}},
       {$sort: {gradex: 1}},
       {$group: {_id: '$user', book: {$addToSet: '$book'}, gradex: {$addToSet: '$gradex'}}},
-
     ])
     return {
       behavior: temp,

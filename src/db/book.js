@@ -202,7 +202,7 @@ const dao = {
     })
   },
   // 批量添加
-  async addTotal (id, click, recommend, read) {
+  async addTotal (id, click, recommend, read, like, comment) {
     return await bookModel.findByIdAndUpdate(id, {
       $inc:{
         todayClick: click,
@@ -211,7 +211,7 @@ const dao = {
         recommendCount: recommend,
         todayRead: read,
         readCount: read,
-        heat: click + recommend * 10, read
+        heat: click + recommend * 10 + read + like + comment
       }
     })
   }
@@ -227,7 +227,9 @@ const server = {
     console.log(book)
     const result = await bookModel.findByNameAndAuthor(book.title, book.author)
     if (result.length) {
-      throw new Error(`book name:${book.title} author:${book.author} is already exist`)
+      return result[0]
+      // throw new Error(`book name:${book.title} author:${book.author} is already exist`)
+      
     } else {
       return await dao.insertBook(book)
     }
@@ -255,7 +257,6 @@ const server = {
       }
     }
   },
-
   async preSearch (text) {
     let result = {}
     const book = await dao.searchAuthor(text)

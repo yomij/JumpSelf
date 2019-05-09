@@ -7,10 +7,12 @@ const color = require('../utils/getMainColor')
 const config = require('../config').novelWebConfig
 const reserveIndex = require('../novel')
 
+const file = require('../utils/file')
+
 const async = require('async');
 const spiderConfig = {
-	CONCURRENCY_COUNT: 5,
-	MAX_SINGLE_COUNT: 10
+	CONCURRENCY_COUNT: 3,
+	MAX_SINGLE_COUNT: 100
 }
 
 async function spider(book, clist) {
@@ -131,7 +133,7 @@ function dos(list, index, bookId, subCallback) {
 	});
 }
 
-async function insertBooksHottest (page = 1) {
+async function insertBooksHottest (page = 1, chapters = false) {
 	const bookurlList = await reserve.getHottestURL(page)
 	console.log(bookurlList, bookurlList.length)
 	async.mapLimit(bookurlList, 1, async function (book, callback) {
@@ -144,20 +146,37 @@ async function insertBooksHottest (page = 1) {
 			book = await bookDao.server.insert(bookInfo)
 			book.chapterUrl = bookInfo.chapterUrl
 			const cs = await reserve.getChapters(book.chapterUrl, book._id)
-			await chapterDao.insertChapters(cs)
+			if(!chapters)await chapterDao.insertChapters(cs)
+			else {
+				let list = []
+				while (cs.length) {
+					list.push(cs.splice(0, spiderConfig.MAX_SINGLE_COUNT))
+				}
+				let index = 0
+				console.log(book.title ? book.title : book + '开始获取')
+				return async.mapLimit(list, 1, function (subList, callback) { // 开始分批抓取章节
+					dos(subList, index++, book._id, callback)
+				}, function (err, result) {
+					const failed = []
+					result.forEach(item => { // 一本书抓取完成 打印失败内容
+						failed.push(...item.data.failed)
+					})
+					console.log(err,failed.length, JSON.stringify(failed))
+					file.writeJson(failed, book.title + ' ' + book._id || 'failed'  + ' ' + book._id, 'F_PATH')
+				})
+			}
 		} catch (e) {
 			console.log('failed', e.message)
 			// return spider(book)
-			return {title: e.message}
+			return {
+				book,
+				data: {title: e.message}
+			}
 		}
-
-		return book
-
+		
 	}, function (err, result) {
 		if(err) console.log(err.message)
-		result.forEach(item => {
-			console.log(item.title ? item.title : item)
-		})
+		file.writeJson(result, 'hotBookPage' + page, 'FB_PATH')
 	})
 }
 
@@ -172,8 +191,8 @@ console.log(	arr.pop().match(/\d+/g)[0], arr.pop())
 // /d/217/217500/
 
 
-spider('/d/216/216693/')
-// insertBooksHottest(10)
+// spider('/d/216/216693/')
+insertBooksHottest(3, true)
 // chapter()
 
 
