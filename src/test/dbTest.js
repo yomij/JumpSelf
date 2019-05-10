@@ -49,11 +49,58 @@ async function test(dao, func) {
   //   })
   //   res.push(temp)
   // }
-  const res =await behaviorDao.totalRead('5c9f584f81a4b6449c52ad14')
+  // const res =await behaviorDao.totalRead('5c9f584f81a4b6449c52ad14')
+  await bookDao.model.updateMany({}, {isDelete: 0})
 console.log(res)
 
   // console.log(books)
 }
+
+
+async function getNochapterBook() {
+  let res = await chapterDao.model.aggregate([
+
+    {
+      $project: {
+        // _id: 1,
+        title: 1,
+        bookId: 1,
+        accounts: 1,
+      }
+    },
+
+    {$group: {_id: '$bookId', count: { $sum: 1 }}},
+    // {$match: {bookId: {$ne: require('mongoose').Types.ObjectId('5cd129e47752e7163ef37772')}}},
+    { "$lookup": {
+        "from": 'books',
+        "localField": "_id",
+        "foreignField": "_id",
+        "as": "book"
+      }},
+    { "$unwind": "$book" },
+    {
+      $project: {
+        _id: 1,
+        count: 1,
+        book: {
+          title: 1
+        }
+      }
+    },
+
+  ])
+  require('../utils/file').writeJson(res, 'bookChapter')
+  console.log(res.length)
+  return res
+}
+
+
+async function getbook() {
+ const books = await bookDao.model.find({}, '_id title createTime')
+  return books
+}
+
+
 
 async function getRecommendData() {
   let res = await behaviorDao.model.aggregate([
@@ -113,4 +160,35 @@ async function getRecommendData() {
   }
 }
 
-test()
+// test()
+
+// getNochapterBook()
+
+async function dos() {
+  
+  const book = await getbook()
+  const haschapter = await getNochapterBook()
+  console.log( book.length)
+  const has = haschapter.filter(item => book.some(c => {
+    // console.log(c,  item)
+    return c._id.toHexString() === item._id.toHexString()
+  }))
+  // console.log(has)
+  book.forEach(e => {
+    const id = e._id.toHexString()
+    let isPass = true
+    for(let i = 0; i< has.length; i++) {
+      let f = has[i]
+      if ( id=== f._id.toHexString()) {
+        isPass = false
+        break
+      }
+    }
+    if (isPass) {
+      console.log(e)
+    }
+  })
+}
+
+dos()
+

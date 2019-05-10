@@ -37,20 +37,23 @@ async function spider(book, clist) {
 	// console.log('aaaaaaa')
 
 		try {
-			console.log(book)
 			bookInfo = await reserve.getBook(book)
-			console.log(bookInfo)
 		} catch (e) {
 			console.log('failed', e.message)
 			// return spider(book)
 			return
 		}
-		bookInfo.mainImg = await color(bookInfo.mainImg.url)
+		console.log('a')
+		if(!bookInfo.mainImg && !bookInfo.mainImg.colors){
+			bookInfo.mainImg = await color(bookInfo.mainImg.url)
+		}
+
 		console.log(bookInfo)
 		book = await bookDao.server.insert(bookInfo)
 		book.chapterUrl = bookInfo.chapterUrl
 	}
 	const cs = clist ? clist : await reserve.getChapters(book.chapterUrl)
+	console.log(cs)
 	let list = []
 	while (cs.length) {
 		list.push(cs.splice(0, spiderConfig.MAX_SINGLE_COUNT))
@@ -191,8 +194,8 @@ console.log(	arr.pop().match(/\d+/g)[0], arr.pop())
 // /d/217/217500/
 
 
-// spider('/d/216/216693/')
-insertBooksHottest(3, true)
+spider('/d/64/64960/')
+// insertBooksHottest(4, true)
 // chapter()
 
 

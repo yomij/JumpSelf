@@ -73,7 +73,7 @@ const server = {
       await behaviorModel.update({
         book: books[i],
         user: userId
-      }, {$inc: data[i]}, {
+      },  data[i], {
         new: true,
         upsert: true,
         setDefaultsOnInsert: true

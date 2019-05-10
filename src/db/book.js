@@ -35,7 +35,7 @@ const bookSchema = db.createSchema({
   todayRecommend: {type: Number, default: 0}, // 今日推荐
   lastRecommendTime: Date, // 最后推荐时间
   recommendCount: {type: Number, default: 0}, // 推荐总数
-
+  isDelete: {type: Number, default: 0},
   mainImg: {
     url: String,
     colors: Array,
@@ -73,17 +73,19 @@ const dao = {
     })
   },
   getBookById(_id) {
-    return bookModel.findById(_id, {extra: 0});
+    return bookModel.findOne({_id, isDelete: 0}, {extra: 0});
   },
   getHeaterByTag (mainTags, limit) {
     // 玄幻奇幻 网游竞技 科幻奇异 历史军事 侦探推理  修真仙侠 言情穿越 耽美同人  都市青春
     return bookModel.find({
+      isDelete: 0,
       mainTag: {$in: mainTags}
     }, {extra: 0}).sort({heat: -1}).limit(limit)
   },
   getMostClickByTag (mainTags, ids = [], limit) {
     // 玄幻奇幻 修真仙侠 都市青春 历史军事 网游竞技 科幻奇异 言情穿越 耽美同人 侦探推理
     return bookModel.find({
+      isDelete: 0,
       mainTag: {
         $in: mainTags
       },
@@ -97,6 +99,7 @@ const dao = {
   getMostClickDaily (mainTags, ids = [], limit) {
     // 玄幻奇幻 修真仙侠 都市青春 历史军事 网游竞技 科幻奇异 言情穿越 耽美同人 侦探推理
     return bookModel.find({
+      isDelete: 0,
       mainTag: {
         $in: mainTags
       },
@@ -110,6 +113,7 @@ const dao = {
   getMostSubscriptionDaily (mainTags, ids = [], limit) {
     // 玄幻奇幻 修真仙侠 都市青春 历史军事 网游竞技 科幻奇异 言情穿越 耽美同人 侦探推理
     return bookModel.find({
+      isDelete: 0,
       mainTag: {
         $in: mainTags
       },
