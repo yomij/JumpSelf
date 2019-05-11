@@ -195,7 +195,7 @@ async function chapter(s) {
 
 
 // spider('/d/64/64960/')
-// insertBooksHottest(4, true)
+insertBooksHottest(6, true)
 // chapter()
 
 
@@ -293,6 +293,7 @@ module.exports = {
 			try {
 				const cs = await reserve.getChapters(book.chapterUrl, book.bookId)
 				if (!cs.length) {
+					console.log(book.title, '抓取失败', book.chapterUrl)
 					return Object.assign(book, {message: '章节抓取失败，无章节'})
 				}
 				await chapterDao.insertChapters(cs)

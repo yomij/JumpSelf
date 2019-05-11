@@ -202,6 +202,7 @@ async function dos() {
       chapterUrl: 'https://read.ixdzs.com' + item.extra.urls.mainUrl.split('/d')[1]
     }
   })
+  console.log(failed.length)
   n.insertFailedBook(failed)
 }
 
