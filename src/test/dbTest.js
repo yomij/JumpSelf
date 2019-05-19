@@ -66,7 +66,6 @@ async function test(dao, func) {
   // console.log(books)
 }
 
-
 async function getNochapterBook() {
   let res = await chapterDao.model.aggregate([
 
@@ -107,12 +106,10 @@ async function getNochapterBook() {
   return res
 }
 
-
 async function getbook() {
   const books = await bookDao.model.find({}, '_id title createTime extra.urls.mainUrl')
   return books
 }
-
 
 async function getRecommendData() {
   let res = await behaviorDao.model.aggregate([
@@ -172,11 +169,10 @@ async function getRecommendData() {
   }
 }
 
-// test()
 
-// getNochapterBook()
 
 const n = require('./reverseTest')
+
 // 失败书籍重新抓取
 async function dos() {
   const book = await getbook()
@@ -203,17 +199,134 @@ async function dos() {
     }
   })
   console.log(failed.length)
-  n.insertFailedBook(failed)
+  // n.insertFailedBook(failed)
 }
-
 // 失败章节重新抓取
 async function reGetChapters(count) {
   const chapters = await chapterDao.model.find({content: ''}).limit(count)
-  await n.getCahpters(chapters)
+  console.log(chapters.length)
+  chapters.forEach(item => {
+    chapterDao.updateChapter(item._id, '此章节章节缺失，请联系系统管理员。--yomi 2019-5-13')
+  })
+  // await n.getCahpters(chapters)
+}
+
+
+const recommend = require('../utils/recommend')
+async function intest(id, x) {
+  const userInterest = await behaviorDao.getUserBehavior(id, 10)
+  let result = []
+  let max = -Infinity
+  let min = Infinity
+  userInterest.forEach(item => {
+    if(!item.book) return console.log(item._id)
+    let num = item.commentCount * 3 + item.commentCount * 1.5 + item.clickCount + item.clickCount + item.shareCount * 5 + item.readCount / item.book.chapterCount * 15
+    if (num > max) max = num
+    if (num < min) min = num
+    result.push([item.book._id, num])
+  })
+  // result.sort((a, b) => {
+  //   if(a[1] > b[1]) return -1
+  //   else return 1
+  // })
+  console.log(result)
+  if (max !== min) {
+    result = result.map(item => {
+      return [item[0], (item[1] * 4.0 + max - 5.0 * min) / (max - min)]
+    })
+  }
+  const recomment = recommend.doRecommend(result, x)
+  console.error(result)
+  console.log()
+  return recomment
+}
+
+async function intestToppest(id, x) {
+  const userInterest = await behaviorDao.getUserBehaviorTop(id, 10)
+  let result = []
+  let max = -Infinity
+  let min = Infinity
+  const sum = userInterest.reduce((v, i) => v + i.grade, 0)
+  const length = userInterest.length
+  console.error()
+  userInterest.forEach(item => {
+    if(!item.book) return console.log(item._id)
+    let num = (item.commentCount * 3 + item.commentCount * 1.5 + item.clickCount + item.clickCount + item.shareCount * 5 + item.readCount / item.book.chapterCount * 15) * item.grade * length / sum
+    if (num > max) max = num
+    if (num < min) min = num
+    result.push([item.book._id, num])
+  })
+  // result.sort((a, b) => {
+  //   if(a[1] > b[1]) return -1
+  //   else return 1
+  // })
+  // console.log(result)
+  if (max !== min) {
+    result = result.map(item => {
+      return [item[0], (item[1] * 4.0 + max - 5.0 * min) / (max - min)]
+    })
+  }
+  const recomment = recommend.doRecommend(result, x)
+  console.error(result)
+  console.log()
+  return recomment
+}
+
+async function getChapterNum() {
+  let res = await chapterDao.model.aggregate([
+    {
+      $project: {
+        // _id: 1,
+        title: 1,
+        bookId: 1,
+        accounts: 1,
+      }
+    },
+    {$group: {_id: '$bookId', chapterCount: {$sum: 1}}},
+  ])
+  res.forEach(async item => {
+    await bookDao.model.update({_id: item._id}, {chapterCount: item.chapterCount})
+  })
 }
 
 // dos()
 
 // test()
 
-reGetChapters(5000)
+// reGetChapters(30000)
+
+// test()
+
+// getNochapterBook()
+// getChapterNum()
+
+// intest() // 最近
+
+// intestToppest() // 最高
+
+
+async function  finalRecommend(id = '5cbf19042cca6d0ff84ba261', calculate = 5, returnCount = 3) {
+  const r1 = await intest(id, calculate) // 最近
+  const r2 = await intestToppest(id, calculate) // 最高
+  const result = []
+  // 组合
+  r1.forEach((item,index) => {
+    result.push(item, r2[index])
+  })
+  // 去重
+  let hash=[];
+  for (let i = 0; i < result.length; i++) {
+    for (let j = i+1; j < result.length; j++) {
+      if(result[i][0]===result[j][0]){
+        ++i;
+      }
+    }
+    hash.push(result[i]);
+  }
+  const subBook = await behaviorDao.getSubBooks(id)
+  
+  // 去除订阅内容
+  console.log(hash)
+}
+
+finalRecommend()

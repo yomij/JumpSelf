@@ -70,23 +70,6 @@ app.use(jwtKoa(
   {
     debug: true,
     secret: config.SECRET,
-    // getToken(ctx, opts) {
-    //   if (!ctx.header || !ctx.header.authorization) {
-    //     return;
-    //   }
-    //   const parts = ctx.header.authorization.split(' ');
-    //   console.log(parts)
-    //   if (parts.length === 2) {
-    //     const scheme = parts[0];
-    //     const credentials = parts[1];
-    //     if (/^Bearer$/i.test(scheme)) {
-    //       return credentials;
-    //     }
-    //   }
-    //   if (!opts.passthrough) {
-    //     ctx.throw(401, 'Bad Authorization header format. Format is "Authorization: Bearer <token>"');
-    //   }
-    // }
   }).unless({
   path: [
     /^\/api\/user\/phone*/,
@@ -95,7 +78,7 @@ app.use(jwtKoa(
     '/api/user/WXlogin',
     '/api/user/login',
     /.+\.[html|ico|jpg)]/,
-    /^\/api2b\/*/
+    // /^\/api2b\/*/
   ] //数组中的路径不需要通过jwt验证
 }));
 

@@ -3,6 +3,7 @@ const config = require('../config').folderConfig;
 
 module.exports = {
 	writeJson(proxyArr, name, path = 'P_PATH') {
+		console.log(`${config[path]}/${name}.json`)
 		let writeStream = fs.createWriteStream(`${config[path]}/${name}.json`);
 		writeStream.on('finish', function(){
 			console.log('Write Success');
@@ -13,8 +14,12 @@ module.exports = {
 		writeStream.write(JSON.stringify(proxyArr));
 		writeStream.end();
 	},
-	readJson(fileName) {
-		const data = fs.readFileSync(`${config.P_PATH}/${fileName}.json`,'utf-8');
+	readJson(fileName, path = 'P_PATH') {
+		const data = fs.readFileSync(`${config[path]}/${fileName}.json`,'utf-8');
+		console.log(`${config[path]}/${fileName}.json`, data)
 		return JSON.parse(data)
+	},
+	getNameByDay(date = new Date()) {
+		return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`
 	}
 }

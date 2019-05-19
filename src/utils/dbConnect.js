@@ -5,7 +5,7 @@ class DB {
 
 		this.mongoose = require('mongoose');
 		this.mongoose.Promise = global.Promise;
-		this.name = name;
+		this.name = config.DB_NAME;
 		this.port = port;
 	}
 
@@ -15,7 +15,9 @@ class DB {
 			return DB.connected[this.name];
 		}
 
+		console.log(`mongodb://${config.DB_HOST}:${this.port}/${this.name}`)
 		const db = this.mongoose.createConnection(`mongodb://${config.DB_HOST}:${this.port}/${this.name}`, {useNewUrlParser: true});
+		// 	const db = this.mongoose.createConnection('mongodb://yomi:HLJhp111@yomiyomi.mongodb.rds.aliyuncs.com:3717,dds-bp19c2233fd884642949-pub.mongodb.rds.aliyuncs.com:3717/yomi?replicaSet=mgset-15006431', {useNewUrlParser: true});
 		DB.connected[this.name] = db;
 		db.on('error', error => console.log('Database connect failed' + error));
 		db.once('open', () => console.log("Database connect success,time:" + new Date().toLocaleString()));

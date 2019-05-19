@@ -11,8 +11,8 @@ const file = require('../utils/file')
 
 const async = require('async');
 const spiderConfig = {
-	CONCURRENCY_COUNT: 3,
-	MAX_SINGLE_COUNT: 100
+	CONCURRENCY_COUNT: 1,
+	MAX_SINGLE_COUNT: 3
 }
 
 async function spider(book, clist) {
@@ -195,7 +195,7 @@ async function chapter(s) {
 
 
 // spider('/d/64/64960/')
-insertBooksHottest(6, true)
+// insertBooksHottest(6, true)
 // chapter()
 
 

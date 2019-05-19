@@ -291,7 +291,7 @@ module.exports = {
 				// .proxy(proxy)
 				.timeout(config.TIMEOUT)
 				.end((err, res) => {
-					console.log(`${url}`)
+					// console.log(`${url}`)
 					if (err) {
 						reject(err)
 					} else {
@@ -346,6 +346,6 @@ module.exports = {
 					}
 				});
 		})
-	},
+	}
 	
 }

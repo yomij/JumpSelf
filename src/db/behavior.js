@@ -8,7 +8,7 @@ const behaviorSchema = db.createSchema({
   interest: Number,
   lastUpdateTime: {type: Date, default: Date.now()}, // 最后行为时间 （不包括点击）
   everSub: {default: false, type: Boolean}, // 订阅过
-  grade: {default: -1, type: Number}, // 评分
+  grade: {default: 0, type: Number}, // 评分
   clickCount: {default: 1, type: Number}, // 点击 次数
   readCount: {default: 1, type: Number}, // 读的次数
   commentCount: {default: 0, type: Number}, // 评论
@@ -60,6 +60,21 @@ const dao = {
       {$match: {user: {$eq: require('mongoose').Types.ObjectId(userId)}, totalReadTime: {$gt: 0}}},
       {$group: {_id: '$user', readTime:{ $sum: '$totalReadTime' }, count: { $sum: 1 }}},
     ])
+  },
+  async getLatestBehavior(id, count) {
+  
+  },
+  async getToppGrade(id, count) {
+  
+  },
+  async getUserBehavior(id, count) {
+    return await behaviorModel.find({user: id}).sort({lastUpdateTime: -1}).limit(count).populate('book')
+  },
+  async getSubBooks (id) {
+    return await behaviorModel.find({user: id}, '-_id book')
+  },
+  async getUserBehaviorTop(id, count) {
+    return await behaviorModel.find({user: id}).sort({grade: -1}).limit(count).populate('book')
   }
 
 }
@@ -70,51 +85,35 @@ const server = {
   async add (userId, books, data) {
     if(!data.length) return
     for(let i = 0; i< data.length; i++) {
+      const {clickCount = 0, shareCount = 0, readCount = 0, likeCount = 0, commentCount = 0, totalReadTime = 0} = data[i].data
+      const {lastUpdateTime} = data[i]
+      const insert = {
+        $inc: {
+          clickCount,
+          shareCount,
+          readCount,
+          likeCount,
+          commentCount,
+          totalReadTime
+        }
+      }
+      if (lastUpdateTime) {
+        insert.lastUpdateTime = lastUpdateTime
+      }
       await behaviorModel.update({
         book: books[i],
         user: userId
-      }, {$inc: data[i]}, {
+      }, insert, {
         new: true,
         upsert: true,
         setDefaultsOnInsert: true
       })
-      await bookDao.addTotal(books[i], ~~data[i].clickCount , ~~data[i].shareCount, ~~data[i].readCount, ~~data[i].likeCount, ~~ data[i].commentCount)
+      await bookDao.addTotal(books[i], ~~clickCount , ~~shareCount, ~~readCount, ~~likeCount, ~~commentCount)
     }
     return true
   },
-  async  getRecommendData(id) {
+  async getRecommendData() {
     let res = await behaviorModel.aggregate([
-      {$project: {
-          _id: 1,
-          book: 1,
-          user: 1,
-          clickCount: 1,
-          everSub: true,
-          grade: 1,
-          lastUpdateTime: 1,
-          readCount: 1,
-          shareCount: 1,
-          // gradex: [ "$grade", "$readCount", '$shareCount' ]
-          gradex: {
-            $add: [
-              {$multiply: [ "$grade", 100 ]},
-              {$multiply: [ "$readCount", 1 ]},
-              {$multiply: [ "$shareCount", 10 ]}
-            ]}
-        }},
-      // {$match: {user: {$ne: require('mongoose').Types.ObjectId(id)}}},
-      {$group: {_id: '$book', user: {$addToSet: '$user'}, gradex: {$addToSet: '$gradex'}}},
-
-    ])
-    const temp = {}
-    res.map(item => {
-      temp[item._id] = {}
-      item.user.forEach((u, i) => {
-        temp[item._id][u] = item.gradex[i]
-      })
-    })
-
-    let personal = await behaviorModel.aggregate([
       {$project: {
           _id: 1,
           book: 1,
@@ -125,26 +124,45 @@ const server = {
           lastUpdateTime: 1,
           readCount: 1,
           shareCount: 1,
-          likeCount: 1,
-          commentCount: 1,
-          // gradex: [ "$grade", "$readCount", '$shareCount' ]
-          gradex: {
-            $add: [
-              {$multiply: [ "$grade", 100 ]},
-              {$multiply: [ "$readCount", 0.1 ]},
-              {$multiply: [ "$shareCount", 5 ]},
-              {$multiply: [ "$likeCount", 1 ]},
-              {$multiply: [ "$commentCount", 3 ]},
-            ]}
         }},
-      {$match: {user: {$eq: require('mongoose').Types.ObjectId(id)}}},
-      {$sort: {gradex: 1}},
-      {$group: {_id: '$user', book: {$addToSet: '$book'}, gradex: {$addToSet: '$gradex'}}},
+      {$match: {grade: {$gt: 0}}},
+      {$group: {_id: '$book', user: {$addToSet: '$user'}, gradex: {$addToSet: '$grade'}}},
+
     ])
-    return {
-      behavior: temp,
-      personalInfo: personal[0]
-    }
+    const temp = {}
+    res.map(item => {
+      temp[item._id] = {}
+      item.user.forEach((u, i) => {
+        temp[item._id][u] = item.gradex[i]
+      })
+    })
+    return temp
+  },
+  async getRecommendDataToppest() {
+    let res = await behaviorModel.aggregate([
+      {$project: {
+          _id: 1,
+          book: 1,
+          user: 1,
+          clickCount: 1,
+          everSub: 1,
+          grade: 1,
+          lastUpdateTime: 1,
+          readCount: 1,
+          shareCount: 1,
+        }},
+      {$match: {grade: {$gt: 0}}},
+      {$group: {_id: '$book', user: {$addToSet: '$user'}, gradex: {$addToSet: '$grade'}}},
+    
+    ])
+    const temp = {}
+    res.map(item => {
+      temp[item._id] = {}
+      item.user.forEach((u, i) => {
+        temp[item._id][u] = item.gradex[i]
+      })
+    })
+    return temp
   }
 }
 

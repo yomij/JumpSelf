@@ -5,7 +5,7 @@ module.exports = {
 	CHAPTER_URL_M: 'https://m.ixdzs.com/read',
 	HOTTEST: 'https://www.ixdzs.com/hot.html?page=',
 
-	TIMEOUT: 10 * 1000,
+	TIMEOUT: 30 * 1000,
 
 
 	CONCURRENCY_COUNT: 3,

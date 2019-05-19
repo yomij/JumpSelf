@@ -95,6 +95,7 @@ behavior.post('/recomment', async (ctx, next) => {
   }
 })
 
+
 // 添加
 behavior.post('/add', async (ctx, next) => {
   const {bev} = ctx.request.body
@@ -102,7 +103,6 @@ behavior.post('/add', async (ctx, next) => {
   else {
     const data = bev
     const ks = [
-      {},
       {key: 'clickCount', v: 1},
       {key: 'readCount', v: 1},
       {key:'totalReadTime', v: 0},
@@ -113,14 +113,15 @@ behavior.post('/add', async (ctx, next) => {
     const res = []
     const books = []
     for(let key in data) {
+      console.log(key, data[key])
       books.push(key)
       const k = Object.keys(data[key])
-      const temp = {}
+      const temp = {data:{}}
       k.forEach(item => {
         if (item === 'lastUpdate') {
-          temp['lastUpdateTime'] =  data[key][item]
+          temp['lastUpdateTime'] =  new Date(data[key][item]).getTime()
         } else {
-          temp[ks[item - 1].key] = data[key][item].count
+          temp.data[ks[item - 1].key] = data[key][item].count
           temp['heat'] += data[key][item].count * ks[item - 1].v
         }
       })
